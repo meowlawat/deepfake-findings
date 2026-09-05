@@ -100,8 +100,18 @@ valid iff $c_R/c_{FN} + c_R/c_{FP} < 1$, and optimal only if $\hat{y}$ is
 calibrated --- the dependency this paper is about.
 
 \section{Experimental Setup}
-\TODO{From docs/03-experiment-plan.md \S1. State identity-level splits
-explicitly.}
+\TODO{From docs/03-experiment-plan.md \S1 (v1 fast-track grid). State plainly:
+one dataset, two watermark schemes (one hand-crafted, one learned, both
+pretrained/zero-training), two zero-shot pretrained detector families, a
+reduced three-class transform suite. No identity-level splits are available
+for this dataset --- state the split protocol actually used and its
+limitation relative to identity-level splitting. State the zero-shot detector
+setting explicitly (docs/04 R10): this measures interference against
+detectors not trained for this task/distribution, which is a different claim
+than measuring it against a purpose-trained detector. If the primary dataset
+is GAN-synthesis rather than face-swap/reenactment content, name that
+substitution here and in the abstract (docs/04 R8) --- do not let
+``deepfake'' stand unqualified if the data doesn't support it.}
 
 \section{Results}
 \subsection{Interference exists (E1)}

@@ -1,7 +1,18 @@
 # Interference-Aware Fusion of Provenance and Passive Evidence for Deepfake Detection
 
-Working repository for a journal submission. Current state: **design stage** — no
-experiments have been run. Nothing in `docs/` is an empirical claim yet.
+Working repository. Current state: **design stage** — no experiments have been
+run. Nothing in `docs/` is an empirical claim yet.
+
+**Scope: v1 fast-track, 10-day deadline.** Hardware is one RTX 3050 (6GB) plus
+Kaggle's free-tier T4 as overflow. This forces no gated datasets (FaceForensics++
+/ Celeb-DF access requests alone can eat the whole budget), zero training
+(pretrained watermark embedders and detectors, used as shipped — this is an
+inference-only workload, which is exactly why 6GB is enough), and a narrower
+scheme/detector/transform matrix than a journal-scale study would run. The full
+matrix is kept in `docs/03-experiment-plan.md` §6 as a named extension, not
+discarded — v1 is a real, honestly-scoped, submittable result on its own; the
+extension is what a revision or follow-up widens toward. See `docs/04-open-risks.md`
+R5–R10 for what this narrowing costs and how it's disclosed in the paper.
 
 ## What this project is
 

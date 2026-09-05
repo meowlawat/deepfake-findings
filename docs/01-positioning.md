@@ -1,5 +1,15 @@
 # Positioning, prior work, and the gap
 
+**Scope note (v1, 10-day budget):** everything below — the occupancy analysis,
+the gap statement, the citation ledger — holds regardless of dataset or
+compute budget; positioning is about what's been published, not about what we
+can run. What changes under the 10-day constraint is *evidentiary breadth*:
+`docs/03-experiment-plan.md` now runs a narrow grid (one dataset, two
+watermark schemes, two zero-shot detectors) instead of the full factorial
+sketched in §4 below, with that full factorial kept as a named extension. Read
+§4's design-change table as "what the method requires," and `docs/03` as "how
+much of it v1 actually measures."
+
 ## 1. Why the original framing fails
 
 The original design's headline — "combine a proactive watermark with a passive AI

@@ -1,138 +1,193 @@
 # Experiment plan
 
-Design constraint: this must be runnable by one person on modest hardware. No
-generative model is trained. Every experiment is measurement plus a fusion layer
-with a handful of parameters.
+**Status: v1 fast-track, 10-day budget.** Hardware: RTX 3050 6GB local +
+Kaggle free-tier T4 (~30h/week, published quota) as overflow. Deadline forces
+three hard constraints, in order of how much they cut:
 
-## 1. Factors
+1. **No gated datasets.** FaceForensics++, Celeb-DF, DFDC all require an access
+   request that alone can consume the entire budget. v1 uses only datasets
+   downloadable instantly, no approval step, no waiting.
+2. **Zero training.** Every watermark embedder/extractor and every detector is
+   used pretrained, as shipped. This is inference-only work, which is exactly
+   why the hardware above is sufficient — there is no backprop in the core loop.
+   Fitting the fusion logistic regression on a few thousand scalar pairs is not
+   "training" in the sense that matters here; it runs on CPU in seconds.
+3. **Narrower matrix.** One dataset, two watermark schemes, two detector
+   families, a reduced transform set. The full matrix from the original plan
+   (§6, "extensions") is preserved as the stated follow-on, not deleted — a
+   journal revision or a second paper builds on v1 by widening it.
 
-**Datasets** (face manipulation, standard and citable):
+This is a genuine scope cut, not a repackaging of the old plan. Say so in the
+paper's limitations section, don't imply otherwise.
 
-| Dataset | Role |
-| --- | --- |
-| FaceForensics++ (c23 and c40) | primary; four manipulation types, two compression levels |
-| Celeb-DF-v2 | cross-dataset generalisation |
-| DFDC-preview | second cross-dataset check, in-the-wild degradation |
-| A diffusion-edit set (e.g. face edits via an off-the-shelf inpainting model) | modern manipulation the transform-domain marks are expected to fail on |
+## 0. Tooling — verify before depending on
 
-Splits are **by source identity**, never by frame. Frame-level splitting inflates
-every number in this literature and reviewers check for it.
+Everything below is a stated plan, not yet confirmed by running it. Each item
+carries what still needs checking, per the repo's citation-verification
+discipline (`docs/01`) extended to tooling.
 
-**Watermark schemes (`S`)** — chosen to span a strength axis, which is what turns
-DWT-SVD's weakness into an experimental variable:
-
-| Scheme | Type | Expected role |
+| Component | Candidate | Verify before committing |
 | --- | --- | --- |
-| DWT-DCT-SVD (`invisible-watermark`) | hand-crafted transform | weak arm; the source design's original choice |
-| HiDDeN | learned encoder/decoder | mid |
-| StegaStamp | learned, print/display robust | strong under physical-ish transforms |
-| SepMark | learned, purpose-built for deepfake settings | strong arm |
+| Watermark library | `invisible-watermark` (pip) | Ships `DwtDct`, `DwtDctSvd` (hand-crafted, zero setup) and `RivaGan` (learned encoder/decoder, ships **pretrained** weights as a separate download — confirm the weight file is still hosted and loads without training) |
+| Dataset | Kaggle `xhlulu/140k-real-and-fake-faces` | StyleGAN-generated faces vs. real FFHQ photos. Confirm license terms permit derivative research use in a paper. **This is whole-image GAN synthesis, not face-swap/reenactment deepfakes — see the scope-honesty note below.** |
+| Dataset (stretch) | Kaggle `manjilkarki/deepfake-and-real-images` | If genuinely derived from face-swap manipulation (not GAN synthesis), this is the better instant-access option for calling the result "deepfake detection" without qualification. Confirm provenance and license before use; community-uploaded redistributions of gated corpora are a real risk (see R8 below). |
+| Detector A | A pretrained ViT-based real/fake image classifier on Hugging Face (e.g. in the `dima806` / `Wvolf` / `prithivMLmods` family — exact model ID TBD) | Confirm it loads via `transformers`, confirm license, confirm it was not trained on the exact eval dataset (leakage) |
+| Detector B | A pretrained CNN-based classifier (Xception- or EfficientNet-family, HF hub) | Same three checks. Must be a genuinely different backbone family from Detector A — the point of using two is that results aren't an artifact of one architecture |
+| Diffusion regeneration attack (stretch, E4) | A small pretrained img2img model via `diffusers`, run on Kaggle T4 | Only attempted if E1–E3 finish with days to spare. This is the single most interesting attack (erases hand-crafted marks by construction) and the first thing cut under time pressure |
+
+**Do not write a single results sentence using a component from this table
+until its "verify" column is actually checked.** This table is a to-do list,
+not a confirmation.
+
+## 1. Factors (v1)
+
+**Dataset:** `140k-real-and-fake-faces`, or the manjilkarki set if it verifies
+as genuine face-manipulation content — pick whichever verifies first, do not
+spend more than one day deciding.
+
+**Splits:** no identity metadata exists for GAN-synthesized faces, so
+identity-level splitting (the standard in the FF++/Celeb-DF literature) is not
+available here. Split by file/generation-seed where the dataset provides it,
+otherwise a stratified random split with a fixed seed. **State this explicitly
+as a limitation** — it is a real reduction in rigor relative to the original
+plan's identity-level splits, not a detail to gloss over.
+
+**Watermark schemes (`S`):**
+
+| Scheme | Type | Role |
+| --- | --- | --- |
+| DwtDctSvd | hand-crafted transform | weak arm — the source design's original choice |
+| RivaGan | learned encoder/decoder, pretrained | strong arm |
 | none (`W = 0`) | — | Legacy Media Bypass control |
 
-**Detectors** (≥2 families, so results are not a backbone artifact):
+Two schemes, not five. The strength-axis argument in `docs/01` §4 only needs
+one point on each side of the hand-crafted/learned divide to be made; it does
+not need five points on the curve. Widening this axis is the first item in the
+extension list (§6).
 
-- Xception / EfficientNet-B4 trained on FF++ — the field's standard baselines.
-- CLIP ViT-L/14 + LoRA — the source design's detector.
-- One robustness-oriented model in the spirit of NTIRE-2026 top entries
-  (foundation backbone + degradation training).
+**Detectors:** two pretrained families (Detector A, Detector B from §0), used
+zero-shot — no fine-tuning on our data. This is a real reduction from "trained
+to convergence on FF++" and must be named as such: v1 measures interference
+against *zero-shot* passive detectors, which is a legitimate and citable
+setting (it is exactly Guo et al.'s setting) but a different claim than
+measuring it against a purpose-trained detector.
 
-**Attack / channel suite `T`** — applied *after* embedding, before detection:
+**Transform suite `T`** — reduced from 8 classes to the 3 that are cheap,
+fast, and already known from the watermarking-robustness literature to matter:
 
-1. JPEG q ∈ {90, 70, 50, 30}
-2. H.264 CRF ∈ {23, 28, 35}
-3. Resize ×{0.75, 0.5}, centre crop {90%, 75%}
-4. Brightness / contrast ±20% (called out because transform-domain marks are
-   reported to fail here)
-5. Rotation ±5°
-6. Gaussian noise, blur
-7. **Diffusion regeneration** (img2img at low strength) — the attack that
-   erases hand-crafted marks by construction
-8. Watermark-removal / overwrite attempt (adversary embeds their own mark)
+1. JPEG at q ∈ {90, 70, 50} — the standard first stress test, and the one
+   WAVES already reports transform-domain marks struggling under.
+2. Resize ×{0.75, 0.5}.
+3. Brightness/contrast ±20% — called out because transform-domain marks are
+   reported to fail here specifically.
 
-## 2. Experiments
+Diffusion regeneration, rotation, crop, Gaussian noise, and the
+watermark-overwrite attack move to the extension list (§6). Cutting them costs
+real coverage — a reviewer may reasonably ask why regeneration (the attack
+that motivates the strength axis in the first place) isn't tested. The honest
+answer, stated in limitations, is the calendar.
 
-### E1 — Does interference exist here? (measurement)
-Compute `Δ_μ`, `Δ_σ`, `Δ_AUC` for every (scheme × detector × class) cell, on
-clean and on each transform class. Deliverable: the interference matrix.
+## 2. Experiments (v1)
 
-*Pre-registered expectation:* `Δ_AUC < 0` for at least the learned schemes, per
-Wu et al. **If `Δ_AUC ≈ 0` everywhere, the pivot's premise fails for images** and
-the paper becomes a replication-boundary result — still publishable, but the
-framing changes. This branch is written down in advance, not discovered later.
+Same logical structure as the original plan, narrower factors.
 
-### E2 — Does it propagate into fusion? (the failure)
-Fit `F1` (naive fusion) on unwatermarked calibration data, apply to the mixed
-stream. Report ECE, Brier, reliability diagrams **split by `W`**, and `ΔECE_W`.
-Then apply the cost-derived `(τ_lo, τ_hi)` and report `DRD`.
+### E1 — Does interference exist here? (go/no-go gate, days 3–4)
+Compute `Δ_μ`, `Δ_σ`, `Δ_AUC` per (scheme × detector × class), clean and per
+transform. **This gate is unchanged and non-negotiable under time pressure:**
+if `Δ_AUC ≈ 0` everywhere, stop and re-scope the paper as a bounded replication
+result before spending the remaining week building on a premise that didn't
+hold. A null result discovered on day 9 is a wasted week; discovered on day 4
+it is still a paper (§ "fallback framing" in `docs/04` R1).
 
-*Claim under test:* `F1` is calibrated on `W = 0` and miscalibrated on `W = 1`,
-so its risk-derived thresholds miss their target risk on watermarked traffic.
+### E2 — Does it propagate into fusion? (days 5–6)
+Fit `F1` on unwatermarked calibration data, evaluate on the mixed stream.
+Reliability diagrams split by `W`, `ΔECE_W`, then apply cost-derived
+`(τ_lo, τ_hi)` and report `DRD`. Unchanged from the original plan — this
+experiment is cheap regardless of matrix size, since it operates on scalar
+scores, not raw media.
 
-### E3 — Does the correction work? (the fix)
-Compare `F0 … F5` on identical splits: ECE, `ΔECE_W`, AURC, selective risk at
-fixed coverage, `DRD`. Report `β₄` with cluster-bootstrap CIs over source
-identity.
+### E3 — Does the correction work? (days 5–6, same window as E2)
+Compare `F0–F5` (`docs/02` §4). Bootstrap CIs now over **samples**, not source
+identity — the dataset has no identity metadata, so this is a weaker
+guarantee than the original plan's identity-clustered bootstrap. Say so.
 
-*Claim under test:* `F3`/`F5` cut `ΔECE_W` and `DRD` substantially relative to
-`F1` at equal or better AUC — i.e. the fix is a calibration fix, not an accuracy
-trade.
+### E4 — Robustness under the reduced transform set (day 7)
+Repeat E3 per transform class from §1. Diffusion regeneration only if time
+remains (see §0's tooling note).
 
-### E4 — Does it hold under attack?
-Repeat E3 per transform class, including diffusion regeneration and watermark
-overwrite. Expected and interesting: as the mark degrades, `z_P` correctly loses
-strength (that is what the LLR is for), and the fusion should degrade gracefully
-toward `F0` rather than confidently wrongly.
+### E5 — Watermarked-fraction sweep (day 7, same window)
+`ρ ∈ {0.05, 0.25, 0.5, 1.0}` — one fewer point than the original plan, same
+purpose: report the realistic mixed regime honestly, not just the
+watermark-saturated one.
 
-### E5 — The realistic mixed regime
-Sweep the watermarked fraction `ρ ∈ {0.05, 0.1, 0.25, 0.5, 1.0}`. Report system
-selective risk vs `ρ`.
-
-*Purpose:* honesty about the Legacy Media Bypass. Watermark-saturated evaluation
-(`ρ = 1`) is the standard flattering setting and is not the deployment regime.
-Reporting `ρ = 0.05` alongside it pre-empts the obvious reviewer objection and
-is itself a finding worth stating.
-
-### E6 — Ablations
-- `z_P` (LLR) vs raw BER as the provenance feature — isolates §2's contribution.
+### E6 — Ablations (day 8)
+- `z_P` (LLR) vs raw BER as the provenance feature.
 - Raw logit vs softmax probability for `V`.
-- Payload length `L ∈ {64, 128, 256}`.
-- Ed25519-signed payload vs plain payload under the overwrite attack (E4.8) —
-  demonstrates the crypto change does real work rather than being cosmetic.
+- Nonlinear fuser (small MLP or gradient-boosted trees) as a control, per
+  `docs/04` R4 — shows the calibration gap isn't fixed by a fancier fuser,
+  which pre-empts the obvious reviewer objection to using logistic regression.
 
-## 3. Table and figure inventory (what the paper must contain)
+**Cut from v1, moved to extension list:** payload-length sweep, and the
+Ed25519-vs-plain-payload forgery ablation. Both require the overwrite attack
+(§1's cut transform), so they fall out together. The Ed25519 design change
+itself stays in `docs/02` as a stated method contribution — it does not need
+an experiment to be a correct fix to a stated flaw, only to be *evaluated*,
+and that evaluation is deferred.
+
+## 3. Table and figure inventory (v1)
+
+Same artifacts as the original plan, same numbering, sourced from the
+narrower matrix:
 
 | # | Artifact | Source |
 | --- | --- | --- |
-| T1 | Interference matrix: `Δ_μ`, `Δ_σ`, `Δ_AUC` per scheme × detector | E1 |
-| T2 | Fusion comparison `F0–F5`: AUC, ECE, `ΔECE_W`, AURC, `DRD` | E3 |
-| T3 | Per-transform breakdown of T2's key rows | E4 |
+| T1 | Interference matrix: `Δ_μ`, `Δ_σ`, `Δ_AUC`, 2 schemes × 2 detectors | E1 |
+| T2 | Fusion comparison `F0–F5` | E3 |
+| T3 | Per-transform breakdown (3 transform classes) | E4 |
 | T4 | Ablations | E6 |
-| T5 | Watermark imperceptibility controls: PSNR / SSIM / clean BER per scheme | setup |
-| F1 | Reliability diagrams, split by `W`, `F1` vs `F3` — **the paper's money figure** | E2/E3 |
-| F2 | Risk-coverage curves, `F0` / `F1` / `F3` | E3 |
-| F3 | Selective risk vs watermarked fraction `ρ` | E5 |
-| F4 | `Δ_AUC` vs watermark strength (PSNR-matched) | E1 |
+| T5 | Watermark imperceptibility controls (PSNR/SSIM/clean BER, 2 schemes) | setup |
+| F1 | Reliability diagrams split by `W`, `F1` vs `F3` — money figure | E2/E3 |
+| F2 | Risk-coverage curves | E3 |
+| F3 | Selective risk vs `ρ` | E5 |
 
-Attention-rollout heatmaps from the source design are **demoted to an appendix
-qualitative figure**. They are illustration, not evidence, and treating XAI
-output as a result is a standard reviewer target.
+`F4` (`Δ_AUC` vs watermark strength across a PSNR-matched sweep) needs more
+than two schemes to be a curve rather than a two-point line — moved to
+extensions.
 
-## 4. Statistical protocol
+## 4. Statistical protocol (v1)
 
-- Identity-level splits; cluster bootstrap over identity for all CIs.
+- Sample-level bootstrap for CIs (identity-level unavailable — see §1).
 - Fusion parameters fit on a calibration split disjoint from test.
-- Three seeds minimum; report mean ± CI, never a single run.
-- Pre-register E1's failure branch (above) before running it.
+- Three seeds minimum on anything stochastic; the fusion fit itself is
+  deterministic given a split.
+- E1's go/no-go decision is pre-registered above, before it is run.
 
-## 5. Build order
+## 5. Build order (10 days)
 
-1. Data pipeline + identity-level splits.
-2. Embed/extract harness for the scheme axis; verify PSNR/SSIM/clean-BER (T5).
-3. Detector inference harness producing raw logits.
-4. Transform suite `T`.
-5. **E1.** Decide here whether the premise holds before building the rest.
-6. Fusion + calibration + Chow rule; E2, E3.
-7. E4, E5, E6.
-8. Paper.
+| Days | Work |
+| --- | --- |
+| 1–2 | Verify §0's tooling table. Data pipeline. Embed/extract harness for both schemes; confirm PSNR/SSIM/clean-BER (T5). Detector inference harness producing raw logits for both detectors. |
+| 3–4 | **E1.** Go/no-go. Do not proceed to day 5 on a premise that hasn't cleared this gate. |
+| 5–6 | Fusion + calibration + Chow rule; E2, E3. |
+| 7 | E4, E5. |
+| 8 | E6. Diffusion regeneration only if ahead of schedule. |
+| 9–10 | Writing. Limitations section written honestly against §1's cuts, not defensively. |
 
-Step 5 is a genuine go/no-go gate. Do not write the introduction before it.
+## 6. Extensions (explicitly deferred, not abandoned)
+
+This is the original multi-week plan, kept as the stated next step rather than
+deleted, per the "merge" resolution — v1 ships as a real, narrow, submittable
+paper; this is what a revision or a follow-up widens toward once time and
+dataset access allow:
+
+- Gated datasets: FaceForensics++ (true face-swap/reenactment manipulations,
+  the thing "deepfake detection" usually means), Celeb-DF, DFDC — once access
+  requests clear.
+- Full scheme axis: HiDDeN, StegaStamp, SepMark alongside DwtDctSvd/RivaGan.
+- A third detector family, and at least one trained-not-zero-shot detector for
+  comparison against the zero-shot setting.
+- Full transform suite: rotation, crop, Gaussian noise/blur, diffusion
+  regeneration, watermark-overwrite forgery attempt.
+- Identity-level splits and identity-clustered bootstrap.
+- Payload-length sweep and the Ed25519-vs-plain forgery ablation.
+- `F4` (interference vs. watermark strength as an actual curve).
