@@ -8,3 +8,6 @@
 __pycache__/
 .venv/
 data/
+
+# Reference PDFs kept locally only — do not redistribute from a public repo
+lit/*.pdf
