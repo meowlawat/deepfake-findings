@@ -23,8 +23,10 @@ Deepfake Detection}
 with passive detection. (2) The two evidence sources are computed from the same
 pixels, and watermark signals are known to overlap with the forgery signals
 detectors rely on, so they are not independent. (3) We quantify this interference
-across $S$ watermark schemes and $D$ detectors, and show that naive score fusion
-inherits it as a calibration gap on watermarked media. (4) Because risk-derived
+across $S$ watermark schemes and $D$ detectors \emph{against a PSNR-matched
+payload-free control}, separating watermark-specific interference from generic
+perturbation brittleness, and show that naive score fusion inherits it as a
+calibration gap on watermarked media. (4) Because risk-derived
 abstention thresholds are only optimal for calibrated posteriors, that gap
 silently invalidates the decision rule on exactly the traffic provenance marking
 is deployed to protect. (5) We give an interference-aware fusion that reduces the
@@ -40,7 +42,11 @@ Contributions, as planned:
 \begin{enumerate}
   \item A measurement of watermark--detector interference in a \emph{fusion}
         setting, across watermark schemes spanning hand-crafted to learned, and
-        across detector families.
+        across detector families, reported \emph{net of a PSNR-matched
+        payload-free perturbation}. This control distinguishes structured
+        interference from a detector's generic fragility under any imperceptible
+        perturbation --- a confound that a raw $\Delta$AUC cannot separate
+        (docs/02-method.md \S3.1).
   \item The observation that this interference manifests as a group-conditional
         calibration gap, and therefore breaks the optimality of risk-derived
         abstention thresholds --- a failure invisible to accuracy and AUC.

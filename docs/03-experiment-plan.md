@@ -58,7 +58,14 @@ plan's identity-level splits, not a detail to gloss over.
 | --- | --- | --- |
 | DwtDctSvd | hand-crafted transform | weak arm — the source design's original choice |
 | RivaGan | learned encoder/decoder, pretrained | strong arm |
+| `∅` null perturbation | payload-free noise, PSNR/SSIM-matched per image | **control arm** — separates watermark-specific interference from generic perturbation brittleness (`docs/02` §3.1). Not optional |
 | none (`W = 0`) | — | Legacy Media Bypass control |
+
+**The `∅` arm is not a nice-to-have.** Without it `Δ_AUC < 0` is equally explained
+by "detectors are brittle to any imperceptible perturbation", which is the null
+hypothesis a zero-shot detector trained on clean images makes *likely*, not
+remote. It is cheap — the PSNR/SSIM matching machinery is already needed for T5 —
+and it converts E1 from a result a reviewer can dismiss into one they cannot.
 
 Two schemes, not five. The strength-axis argument in `docs/01` §4 only needs
 one point on each side of the hand-crafted/learned divide to be made; it does
@@ -91,12 +98,33 @@ answer, stated in limitations, is the calendar.
 
 Same logical structure as the original plan, narrower factors.
 
+### E0 — Detector floor check (precondition, days 1–2)
+
+Before any interference measurement, confirm each detector clears a **baseline
+AUC floor of 0.80 at `W = 0`** on this dataset. A detector near chance makes
+`Δ_AUC` a measurement of noise, and the E1 gate cannot tell that apart from a
+genuine null.
+
+This runs in the day 1–2 tooling window, **not** at the day 3–4 gate, and the
+reason is scheduling: if a detector fails the floor, the response is to swap
+models, and a swap is only affordable while days 1–2 are still open. Discovering
+it at the gate costs the swap and the gate together.
+
+If neither candidate detector clears 0.80, that is itself a finding about
+zero-shot detectors on this dataset — record it, then widen the candidate pool
+before proceeding.
+
 ### E1 — Does interference exist here? (go/no-go gate, days 3–4)
 Compute `Δ_μ`, `Δ_σ`, `Δ_AUC` per (scheme × detector × class), clean and per
-transform. **This gate is unchanged and non-negotiable under time pressure:**
-if `Δ_AUC ≈ 0` everywhere, stop and re-scope the paper as a bounded replication
-result before spending the remaining week building on a premise that didn't
-hold. A null result discovered on day 9 is a wasted week; discovered on day 4
+transform — **including the `∅` null arm**, and report
+`Δ_AUC_net = Δ_AUC(s) − Δ_AUC(∅)` as the headline quantity (`docs/02` §3.1).
+
+**This gate is unchanged and non-negotiable under time pressure:** if
+`Δ_AUC_net ≈ 0` everywhere — whether because nothing shifts, or because the
+watermark arms shift no more than the null arm — stop and re-scope the paper as a
+bounded replication result before spending the remaining week building on a
+premise that didn't hold. Note the gate now tests the *net* quantity: a large
+`Δ_AUC` that the null arm reproduces is a failed gate, not a passed one. A null result discovered on day 9 is a wasted week; discovered on day 4
 it is still a paper (§ "fallback framing" in `docs/04` R1).
 
 ### E2 — Does it propagate into fusion? (days 5–6)
@@ -141,7 +169,7 @@ narrower matrix:
 
 | # | Artifact | Source |
 | --- | --- | --- |
-| T1 | Interference matrix: `Δ_μ`, `Δ_σ`, `Δ_AUC`, 2 schemes × 2 detectors | E1 |
+| T1 | Interference matrix: `Δ_μ`, `Δ_σ`, `Δ_AUC`, `Δ_AUC_net`, 3 arms (2 schemes + `∅` null) × 2 detectors | E1 |
 | T2 | Fusion comparison `F0–F5` | E3 |
 | T3 | Per-transform breakdown (3 transform classes) | E4 |
 | T4 | Ablations | E6 |
@@ -166,8 +194,8 @@ extensions.
 
 | Days | Work |
 | --- | --- |
-| 1–2 | Verify §0's tooling table. Data pipeline. Embed/extract harness for both schemes; confirm PSNR/SSIM/clean-BER (T5). Detector inference harness producing raw logits for both detectors. |
-| 3–4 | **E1.** Go/no-go. Do not proceed to day 5 on a premise that hasn't cleared this gate. |
+| 1–2 | Verify §0's tooling table. Data pipeline. Embed/extract harness for both schemes **plus the `∅` null-perturbation generator, PSNR/SSIM-matched per image**; confirm PSNR/SSIM/clean-BER (T5). Detector inference harness producing raw logits. **E0 detector floor check — swap models now if either misses 0.80.** |
+| 3–4 | **E1**, including the `∅` arm. Go/no-go on `Δ_AUC_net`. Do not proceed to day 5 on a premise that hasn't cleared this gate. |
 | 5–6 | Fusion + calibration + Chow rule; E2, E3. |
 | 7 | E4, E5. |
 | 8 | E6. Diffusion regeneration only if ahead of schedule. |
