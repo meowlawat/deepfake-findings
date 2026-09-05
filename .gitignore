@@ -1,0 +1,10 @@
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.pdf
+!docs/**/*.pdf
+__pycache__/
+.venv/
+data/

@@ -1,0 +1,129 @@
+% Scaffold only. No result in this file is real until produced by code in this
+% repository. Placeholder numbers are written as \TODO{} so they cannot be
+% mistaken for measurements.
+\documentclass[journal]{IEEEtran}
+
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
+
+\begin{document}
+
+\title{Interference-Aware Fusion of Provenance and Passive Evidence for
+Deepfake Detection}
+
+\author{\TODO{authors}}
+
+\maketitle
+
+\begin{abstract}
+\TODO{Write last. Skeleton: (1) Hybrid forensics fuses proactive watermarking
+with passive detection. (2) The two evidence sources are computed from the same
+pixels, and watermark signals are known to overlap with the forgery signals
+detectors rely on, so they are not independent. (3) We quantify this interference
+across $S$ watermark schemes and $D$ detectors, and show that naive score fusion
+inherits it as a calibration gap on watermarked media. (4) Because risk-derived
+abstention thresholds are only optimal for calibrated posteriors, that gap
+silently invalidates the decision rule on exactly the traffic provenance marking
+is deployed to protect. (5) We give an interference-aware fusion that reduces the
+calibration gap by \TODO{X} and the decision risk deviation by \TODO{Y} at equal
+detection AUC.}
+\end{abstract}
+
+\section{Introduction}
+\TODO{Do not write before Experiment E1 clears the go/no-go gate
+(docs/03-experiment-plan.md \S2).}
+
+Contributions, as planned:
+\begin{enumerate}
+  \item A measurement of watermark--detector interference in a \emph{fusion}
+        setting, across watermark schemes spanning hand-crafted to learned, and
+        across detector families.
+  \item The observation that this interference manifests as a group-conditional
+        calibration gap, and therefore breaks the optimality of risk-derived
+        abstention thresholds --- a failure invisible to accuracy and AUC.
+  \item An interpretable interference-aware fusion rule that restores
+        calibration, with the interference recoverable as a single readable
+        coefficient.
+  \item An evaluation in the realistic mixed regime, where only a small fraction
+        of media carries a mark.
+\end{enumerate}
+
+\section{Related Work}
+\TODO{Three subsections. Cite only from paper/refs.bib.}
+\subsection{Proactive watermarking for deepfake forensics}
+\subsection{Passive detection and its robustness}
+\subsection{Interference between the two paradigms}
+\TODO{This is where wu2024watermarksbugs and muller2026watermarkshortcut carry
+the argument, and where the gap is stated against guo2024passiveorwatermark.}
+
+\section{Method}
+\subsection{Provenance evidence as a likelihood ratio}
+Let the recovered payload contain $k_e$ bit errors out of $L$. Under intact
+provenance, errors are channel noise, $k_e \sim \mathrm{Bin}(L, p_0)$; under no
+valid provenance the recovered bits are uninformative, $k_e \sim
+\mathrm{Bin}(L, 1/2)$. The provenance log-likelihood ratio is
+\begin{equation}
+  z_P = L\log 2 + k_e \log p_0 + (L - k_e)\log(1-p_0),
+  \label{eq:zp}
+\end{equation}
+with $p_0$ estimated on a held-out clean-transform calibration set. $z_P$ is in
+log-odds units and is defined only when a mark is present.
+
+\subsection{Interference}
+For watermark scheme $s$ and class $y$,
+\begin{align}
+  \Delta_\mu(s,y)   &= \mathbb{E}[V \mid W{=}1, S{=}s, Y{=}y] - \mathbb{E}[V \mid W{=}0, Y{=}y],\\
+  \Delta_{\mathrm{AUC}}(s) &= \mathrm{AUC}(V; W{=}1, S{=}s) - \mathrm{AUC}(V; W{=}0).
+\end{align}
+
+\subsection{Fusion}
+\begin{equation}
+  \hat{y} = \sigma\!\left(\beta_0 + \beta_1 z_P + \beta_2 V + \beta_3 W
+            + \beta_4 (W\!\cdot\!V)\right).
+  \label{eq:fusion}
+\end{equation}
+The independence assumption implicit in naive fusion forces $\beta_4 = 0$;
+$\beta_4 \neq 0$ is therefore the measurement of interference inside the decision
+rule.
+
+\subsection{Risk-derived abstention}
+With costs $c_{FN}, c_{FP}, c_R$, Chow's rule gives
+\begin{equation}
+  \tau_{lo} = \frac{c_R}{c_{FN}}, \qquad
+  \tau_{hi} = 1 - \frac{c_R}{c_{FP}},
+  \label{eq:chow}
+\end{equation}
+valid iff $c_R/c_{FN} + c_R/c_{FP} < 1$, and optimal only if $\hat{y}$ is
+calibrated --- the dependency this paper is about.
+
+\section{Experimental Setup}
+\TODO{From docs/03-experiment-plan.md \S1. State identity-level splits
+explicitly.}
+
+\section{Results}
+\subsection{Interference exists (E1)}
+\TODO{Table T1, Figure F4.}
+\subsection{It propagates into fusion (E2)}
+\TODO{Figure F1 --- reliability diagrams split by $W$. Money figure.}
+\subsection{Interference-aware fusion restores calibration (E3)}
+\TODO{Table T2, Figure F2.}
+\subsection{Under attack and in the mixed regime (E4, E5)}
+\TODO{Table T3, Figure F3.}
+\subsection{Ablations (E6)}
+\TODO{Table T4.}
+
+\section{Limitations}
+\TODO{State plainly: face-centric data; a fixed detector set; costs are assumed
+rather than elicited from a deployment; the fraction $\rho$ of watermarked media
+in the wild is unknown and swept rather than measured.}
+
+\section{Conclusion}
+\TODO{Write last.}
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
