@@ -64,6 +64,30 @@ def ablation_zp_vs_ber(cal, test, cfg) -> list[dict]:
     return out
 
 
+def ablation_logit_vs_softmax(cal, test, cfg) -> list[dict]:
+    """docs/02 S1 uses the raw logit for V, on the grounds that softmax
+    confidence is unreliable under perturbation/OOD. V here is
+    logit_fake - logit_real, so the corresponding softmax probability is
+    exactly sigmoid(V) - a monotone squashing. That means AUC is invariant by
+    construction (ranking is unchanged) and only the calibration-sensitive
+    metrics can move. Reporting AUC alongside makes that invariance visible
+    rather than looking like a null result: if ECE/DRD shift while AUC does
+    not, the squashing is doing exactly what docs/02 S1 says it does.
+    """
+    def squash(d):
+        return fusion.FusionInputs(
+            v=1.0 / (1.0 + np.exp(-d.v)), z_p=d.z_p, w=d.w, b=d.b, y=d.y)
+
+    model = fusion.fit("F3", cal)
+    out = [_report(test.y, model.predict_proba(test), test.w, cfg, "F3 with raw logit V")]
+
+    cal_s, test_s = squash(cal), squash(test)
+    model_s = fusion.fit("F3", cal_s)
+    out.append(_report(test_s.y, model_s.predict_proba(test_s), test_s.w, cfg,
+                        "F3 with softmax-prob V"))
+    return out
+
+
 def ablation_nonlinear_fuser(cal, test, cfg) -> list[dict]:
     """docs/04 R4's control: does a black-box fuser close the calibration gap?"""
     def design(d):
@@ -102,6 +126,7 @@ def main() -> int:
 
     rows = []
     rows += ablation_zp_vs_ber(cal, test, cfg)
+    rows += ablation_logit_vs_softmax(cal, test, cfg)
     rows += ablation_nonlinear_fuser(cal, test, cfg)
 
     for r in rows:
