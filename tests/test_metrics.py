@@ -116,3 +116,20 @@ def test_decision_risk_deviation_runs():
     tau_lo, tau_hi = metrics.chow_thresholds(100, 20, 1)
     drd = metrics.decision_risk_deviation(y, y_prob, tau_lo, tau_hi, 100, 20, 1)
     assert np.isfinite(drd) and drd >= 0
+
+
+def test_pure_location_shift_moves_delta_mu_not_delta_auc():
+    """The distinction E1's real data turns on: a uniform shift applied to
+    BOTH classes changes the score distribution's location but not its
+    ranking, so delta_mu tracks the shift while delta_auc stays ~0. If these
+    two ever move together on synthetic data with a known injected shift, the
+    metric implementations are wrong.
+    """
+    rng = np.random.default_rng(0)
+    y = rng.integers(0, 2, 400)
+    v_clean = rng.normal(0, 1, 400) + y * 1.5
+    v_shifted = v_clean + 0.7  # same shift for both classes
+
+    assert metrics.delta_mu(v_shifted, v_clean) == pytest.approx(0.7, abs=1e-9)
+    assert metrics.delta_auc(y, v_shifted, y, v_clean) == pytest.approx(0.0, abs=1e-9)
+    assert metrics.delta_sigma(v_shifted, v_clean) == pytest.approx(1.0, abs=1e-9)
