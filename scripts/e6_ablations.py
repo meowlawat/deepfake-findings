@@ -81,11 +81,19 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--detector", default="effnet", choices=["vit", "effnet"])
+    parser.add_argument("--limit", type=int, default=None, help="cap items (stratified) for a smoke run")
     parser.add_argument("--out", default="results/e6_ablations.json")
     args = parser.parse_args()
 
     cfg = yaml.safe_load(Path(args.config).read_text())
     items = data_mod.discover(Path(cfg["dataset"]["root"]))
+    if args.limit:
+        by_label = {}
+        for it in items:
+            by_label.setdefault(it.label, []).append(it)
+        per_class = max(1, args.limit // max(1, len(by_label)))
+        items = [it for g in by_label.values() for it in g[:per_class]]
+
     splits = data_mod.stratified_split(items, cfg["dataset"]["calibration_fraction"], cfg["dataset"]["split_seed"])
 
     cal, p0_cal, _ = build_fusion_dataset(splits.calibration, cfg, args.detector, seed=41)

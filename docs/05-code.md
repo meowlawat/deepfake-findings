@@ -43,13 +43,23 @@ Verified by actually running it, not by plan:
   this session; **not yet run on the real dataset**, which requires the
   Kaggle account that lives on the local machine, not this environment.
 
-**Not yet built**: E0's standalone floor-check script, E2-E6's orchestration
-scripts. The math they need (fusion fitting, calibration, bootstrap CIs,
-selective risk) already exists and is tested in `fusion.py`/`metrics.py`/
-`stats.py` - what's missing is the thin per-experiment driver code, which is
-mechanical once the real dataset is in hand and `Detector`/`watermark`
-outputs are cached (running two HF models plus two watermark schemes per
-image is the actual bottleneck, not the analysis).
+- **Dataset** (`scripts/fetch_dataset.py`): the Kaggle account turned out to
+  be unnecessary. `TheKernel01/140k-Real-and-Fake-Faces` on the HF Hub
+  mirrors the same corpus (140k images, real/fake labels, a `generator`
+  field separating Real from StyleGAN, license `cc`), and the script streams
+  a balanced subset rather than pulling the full ~4GB.
+- **E0/E1** (`scripts/e1_interference.py`): E0's floor check is computed
+  inside this script from the clean-arm scores it already gathers, rather
+  than as a separate pass - including the docs/04 R14 leakage flag, where a
+  baseline AUC above the configured suspicion threshold is reported as
+  suspect rather than celebrated.
+- **E2-E6** (`scripts/e2_e3_fusion.py`, `e4_e5_transforms_rho.py`,
+  `e6_ablations.py`) plus `scripts/make_report.py`, which emits the paper's
+  LaTeX tables and figures from the result JSONs.
+- All experiment scripts take `--limit N` for a stratified smoke run. That
+  flag exists because the first version sliced `items[:N]` after
+  `data.discover()` had already grouped by class, so every dry run was
+  silently single-class and every AUC came back NaN.
 
 ## Running it
 
