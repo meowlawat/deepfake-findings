@@ -161,3 +161,100 @@ is the operational reporting (`docs/02` §5). Presenting a wide review band as
 straightforwardly better than the source design's narrow one, without saying
 what it does to coverage, would repeat the original design's error of asserting
 thresholds without accounting for their consequences.
+
+## R14 — Detector training-data provenance is unconfirmed, and one card's own number is a red flag
+`docs/03` §0 required confirming each candidate detector "was not trained on
+the exact eval dataset (leakage)" before use. Neither surviving candidate
+clears that bar:
+
+- `Wvolf/ViT_Deepfake_Detection`'s card names no training dataset at all —
+  "trained ... to detect deepfake images," nothing more specific.
+- `Skullly/DeepFake-EN-B6`'s card reports **99.89% accuracy on an explicitly
+  "unknown dataset."** That is not a reassuring number in this context — it is
+  the number a model gets when it has memorized the exact distribution it is
+  evaluated on, and `140k-real-and-fake-faces` is a common enough Kaggle
+  target that a fine-tune landing on it by coincidence is plausible, not
+  exotic.
+
+If either detector saw this dataset (or a close derivative) during training,
+v1 is not measuring "zero-shot passive detection" as `docs/03` §1 and R10
+claim — it is measuring interference against a detector that has partly
+memorized the answer key, which changes both the E0 floor check (a
+leakage-inflated detector clears 0.80 trivially, telling you nothing about
+zero-shot robustness) and E1 (a memorized detector's response to a watermark
+perturbation is a different, harder-to-interpret quantity than a genuinely
+zero-shot one's).
+
+**Mitigation, must be built into the code, not just noted in prose:**
+
+1. **Report E0's baseline AUC honestly, and treat a suspiciously high one as
+   a finding, not a pass.** An AUC above roughly 0.97 at `W=0` on a dataset
+   this easy (whole-image GAN synthesis vs. real photos, no adversarial
+   effort) is grounds to suspect leakage rather than celebrate the floor
+   check clearing with room to spare. State whatever baseline AUC is
+   measured, plainly, in T5/T1 — do not round it down to "clears the floor"
+   without comment if it lands at 0.99+.
+2. **Make every headline interference and calibration number a within-model,
+   within-image delta, never an absolute accuracy claim.** `Δ_μ`, `Δ_σ`,
+   `Δ_AUC`, `Δ_AUC_net`, and `ΔECE_W` all compare the *same* model's response
+   to the *same* underlying images across conditions (watermarked vs. clean,
+   `W=1` vs. `W=0`). Memorization of the clean-vs-fake boundary is common-mode
+   across those conditions and cancels in the subtraction to first order;
+   it does not automatically cancel if the memorized features are exactly the
+   frequencies a given watermark perturbs, which is itself worth checking
+   (compare the `∅` null arm's `Δ_AUC` against each scheme's — R11's control
+   already buys most of this). Absolute AUC/accuracy is reported in tables as
+   context only, explicitly labelled as such, never as a claim about
+   real-world zero-shot performance.
+3. **State the unresolved leakage risk in the paper's limitations section
+   by name**, with both candidates' model-card evidence quoted as above. A
+   reviewer who finds this independently and sees it unacknowledged will
+   read the whole zero-shot framing as unreliable; a reviewer who sees it
+   named and mitigated reads it as a well-scoped study.
+
+This does not block v1 — no leakage-free deepfake detector with disclosed
+training data and instant access is know to exist for this timeline — but it
+is not optional to fix in the paper's prose, and the within-model-delta
+convention in item 2 must be enforced in the analysis code itself, not left
+to each script author's discretion.
+
+## R15 — Measured: the crypto-binding verification path is unreliable, not just theoretically fragile
+`docs/03`'s tooling verification (`scripts/00_verify_tooling.py`) measures
+`crypto_binding.verification_reliability_rate` directly rather than assuming
+it. On one 8-image batch of synthetic photo-like content (smooth, spatially
+correlated noise - not a real photograph, no dataset is available in this
+environment), the false-negative rate came back **62.5%** - more than half
+of legitimately watermarked images failed their own signature check. A
+single earlier spot-check on one image had shown 0/16 mismatches at the
+tuned hash size; the 8-image batch shows that anecdote does not generalize,
+and the failure rate varies enormously across synthetic samples.
+
+This does **not** block v1's interference/fusion experiments (E1-E6): those
+already use ground-truth `W`, from knowing which images the pipeline
+embedded, and never call `crypto_binding.verify_entry`/`resolve_and_verify`
+to produce it (see `fusion.py`'s `FusionInputs.w` docstring - this design
+decision was made *before* this measurement, for a different reason
+identified while testing, and it turns out to also be load-bearing for this
+one). What it does affect: `docs/02` S2.1's claim that the Ed25519 binding
+gives real deployments an *operational* mechanism for observing `W` is not
+supported by what's been measured so far. As written that claim is aspirational.
+
+**Before the paper asserts anything about the crypto binding as a deployment
+mechanism (as opposed to a stated design correction to the source material's
+AES-256 choice, which stands on its own merits):**
+
+1. Re-run `verification_reliability_rate` on real photographs from whichever
+   dataset v1 settles on (docs/03 S0) - synthetic smooth noise may simply be
+   a bad proxy for real image statistics in a way that happens to break
+   average-hashing specifically.
+2. If the real-photo rate is still high, replace the average-hash with an
+   actual published perceptual hash (pHash/DCT-based, or a proper fuzzy
+   commitment scheme) rather than continuing to hand-tune `DEFAULT_HASH_SIZE`
+   by trial and error - the trial-and-error approach has now failed to
+   generalize once, which is itself the signal to stop tuning and change
+   primitive.
+3. Report whatever the measured rate is, plainly, wherever `docs/02` S2.1 is
+   presented in the paper - do not let "we corrected AES-256 to Ed25519" read
+   as "and it works," when only the unforgeability *argument* has been
+   checked, not the hash-stability *mechanism* the argument depends on to be
+   invokable at all.

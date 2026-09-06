@@ -28,16 +28,18 @@ discipline (`docs/01`) extended to tooling.
 
 | Component | Candidate | Verify before committing |
 | --- | --- | --- |
-| Watermark library | `invisible-watermark` (pip) | Ships `DwtDct`, `DwtDctSvd` (hand-crafted, zero setup) and `RivaGan` (learned encoder/decoder, ships **pretrained** weights as a separate download — confirm the weight file is still hosted and loads without training) |
-| Dataset | Kaggle `xhlulu/140k-real-and-fake-faces` | StyleGAN-generated faces vs. real FFHQ photos. Confirm license terms permit derivative research use in a paper. **This is whole-image GAN synthesis, not face-swap/reenactment deepfakes — see the scope-honesty note below.** |
-| Dataset (stretch) | Kaggle `manjilkarki/deepfake-and-real-images` | If genuinely derived from face-swap manipulation (not GAN synthesis), this is the better instant-access option for calling the result "deepfake detection" without qualification. Confirm provenance and license before use; community-uploaded redistributions of gated corpora are a real risk (see R8 below). |
-| Detector A | A pretrained ViT-based real/fake image classifier on Hugging Face (e.g. in the `dima806` / `Wvolf` / `prithivMLmods` family — exact model ID TBD) | Confirm it loads via `transformers`, confirm license, confirm it was not trained on the exact eval dataset (leakage) |
-| Detector B | A pretrained CNN-based classifier (Xception- or EfficientNet-family, HF hub) | Same three checks. Must be a genuinely different backbone family from Detector A — the point of using two is that results aren't an artifact of one architecture |
+| Watermark library | `invisible-watermark` 0.2.0 (pip) | **VERIFIED, this session.** `DwtDctSvd` embed/extract round-trips with zero setup. `RivaGan`'s encoder/decoder ship as ONNX weights *inside the pip package itself* (`rivagan_{encoder,decoder}.onnx`) — no separate download, no training — but the package only loads them if `onnxruntime` is installed; add it to `requirements.txt` explicitly, it is not pulled in automatically. |
+| Dataset | Kaggle `xhlulu/140k-real-and-fake-faces` | StyleGAN-generated faces vs. real FFHQ photos. **Still unverified** — needs a Kaggle account/API key, which lives on the local machine, not this session. Confirm license terms permit derivative research use in a paper. **This is whole-image GAN synthesis, not face-swap/reenactment deepfakes — see R8.** |
+| Dataset (stretch) | Kaggle `manjilkarki/deepfake-and-real-images` | Same access limitation. If genuinely derived from face-swap manipulation (not GAN synthesis), this is the better instant-access option for calling the result "deepfake detection" without qualification. Confirm provenance and license before use — see R9. |
+| Detector A | `Wvolf/ViT_Deepfake_Detection` (ViT) | **VERIFIED, this session.** Loads via `transformers.AutoModelForImageClassification`, produces raw 2-class logits (`id2label: {0: Real, 1: Fake}`). Apache-family HF hosting, no gate. **Leakage: UNRESOLVED** — model card states only "trained by [author] ... to detect deepfake images," names no dataset. Cannot confirm it wasn't trained on (a close relative of) the eval set. See R14. |
+| Detector B | `Skullly/DeepFake-EN-B6` (EfficientNet-B6) | **VERIFIED, this session** — and it's the fix to a real gap: every ViT candidate the plan originally listed (`dima806`, `Wvolf`, `prithivMLmods`) shares one backbone family, which fails this table's own "genuinely different architecture" requirement. This one is a real CNN. Loads cleanly, produces raw 2-class logits (`id2label: {0: f, 1: r}` — note the reversed index order relative to Detector A; code must resolve the fake-class index from `id2label`, never assume index 1). **Leakage: WORSE than unresolved** — card reports 99.89% eval accuracy on an explicitly "unknown dataset." That number is itself a leakage red flag, not a reassurance. See R14. |
 | Diffusion regeneration attack (stretch, E4) | A small pretrained img2img model via `diffusers`, run on Kaggle T4 | Only attempted if E1–E3 finish with days to spare. This is the single most interesting attack (erases hand-crafted marks by construction) and the first thing cut under time pressure |
 
 **Do not write a single results sentence using a component from this table
-until its "verify" column is actually checked.** This table is a to-do list,
-not a confirmation.
+until its "verify" column is actually checked.** Four of six rows are now
+verified; the two dataset rows still need the Kaggle account that lives on
+the local machine, and both detector rows carry an unresolved leakage risk
+that changes what E0's floor check can actually prove — see R14.
 
 ## 1. Factors (v1)
 

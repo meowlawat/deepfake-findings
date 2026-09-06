@@ -1,7 +1,12 @@
 # Interference-Aware Fusion of Provenance and Passive Evidence for Deepfake Detection
 
-Working repository. Current state: **design stage** — no experiments have been
-run. Nothing in `docs/` is an empirical claim yet.
+Working repository. Current state: **code exists and is tested; no experiment
+has been run on real data yet.** The watermarking, crypto-binding, detector,
+and fusion code in `src/` is verified end-to-end on synthetic data (27 passing
+tests, plus a full smoke run of the E1 pipeline) — see `docs/05-code.md`. What
+hasn't happened yet is running it on the actual dataset, which needs a Kaggle
+account that lives on the local machine, not wherever this was built. Nothing
+in `docs/` or `paper/` is an empirical claim about the real data yet.
 
 **Scope: v1 fast-track, 10-day deadline.** Hardware is one RTX 3050 (6GB) plus
 Kaggle's free-tier T4 as overflow. This forces no gated datasets (FaceForensics++
@@ -46,6 +51,11 @@ that restores both.*
 | `docs/02-method.md` | Formal method: LLR provenance score, interference model, fusion, Chow abstention |
 | `docs/03-experiment-plan.md` | Datasets, schemes, detectors, attack suite, metrics, table/figure inventory |
 | `docs/04-open-risks.md` | Unverified claims, threats to the contribution, what must be read before citing |
+| `docs/05-code.md` | What's implemented, what's verified by running it, design corrections found while building |
+| `src/deepfake_interference/` | The actual method: watermarking, crypto binding, detectors, metrics, fusion (F0–F5), stats |
+| `scripts/` | Runnable pipeline: tooling verification, the E1 go/no-go gate |
+| `tests/` | 27 tests, no GPU/network required, run in ~5s |
+| `config.yaml` | Single source of truth for every constant a script uses |
 | `paper/main.tex` | Paper scaffold matching the plan |
 | `paper/refs.bib` | Bibliography — **verified entries only** |
 

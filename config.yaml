@@ -1,0 +1,53 @@
+# v1 fast-track configuration - docs/03. Every script under scripts/ reads
+# this rather than hardcoding constants, so a single file documents the run.
+
+dataset:
+  # Point this at an unzipped Kaggle dataset root containing real/ and fake/
+  # subfolders (docs/03 S0: xhlulu/140k-real-and-fake-faces, or
+  # manjilkarki/deepfake-and-real-images if it verifies as genuine
+  # face-manipulation content - see docs/04 R8/R9). Not fetched by this repo:
+  # the Kaggle account lives on the local machine, not this environment.
+  root: "data/raw"
+  image_size: 256
+  calibration_fraction: 0.30
+  split_seed: 0
+  # Subsample for fast iteration; set to null to use the full dataset once
+  # the pipeline is validated end-to-end on a slice.
+  max_items_per_class: null
+
+watermark:
+  payload_bits: 32
+  schemes: ["dwtDctSvd", "rivaGan"]
+  null_arm: true          # docs/02 S3.1 - required, not optional
+  null_tolerance_db: 0.5
+
+detectors:
+  vit: "Wvolf/ViT_Deepfake_Detection"
+  effnet: "Skullly/DeepFake-EN-B6"
+  floor_auc: 0.80          # docs/03 E0
+  leakage_suspicion_auc: 0.97   # docs/04 R14 - report, don't silently celebrate
+
+transforms:
+  jpeg_quality: [90, 70, 50]
+  resize_scale: [0.75, 0.5]
+  brightness_contrast_pct: [20, -20]
+
+fusion:
+  models: ["F0", "F1", "F2", "F3", "F4", "F5"]
+  n_bins_ece: 15
+  n_bootstrap: 2000
+  bootstrap_ci: 0.95
+  bootstrap_seed: 0
+
+cost_model:
+  # docs/02 S5's plausible example, not the source design's 0.35/0.65 band.
+  # Override per-deployment; this is a default for reporting, not a claim.
+  c_fn: 100
+  c_fp: 20
+  c_r: 1
+
+rho_sweep: [0.05, 0.25, 0.5, 1.0]     # docs/03 E5
+
+crypto_binding:
+  key_id_bytes: 4
+  hash_size: 3             # empirically tuned - see crypto_binding.py docstring

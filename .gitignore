@@ -6,8 +6,13 @@
 *.pdf
 !docs/**/*.pdf
 __pycache__/
+*.pyc
+.pytest_cache/
 .venv/
 data/
+results/
+*.egg-info/
+.DS_Store
 
 # Reference PDFs kept locally only — do not redistribute from a public repo
 lit/*.pdf
