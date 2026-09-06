@@ -154,3 +154,47 @@ _Filled from `results/e4_e5.json`._
 ## E6 — ablations (T4)
 
 _Filled from `results/e6_ablations.json`._
+
+## A structural limitation that governs how E2–E6 must be read
+
+Noted before E2/E3's numbers arrived, so it cannot be mistaken for a
+post-hoc excuse for them.
+
+**The provenance channel is non-informative in this setup by construction.**
+The pipeline takes images that are *already* real or fake (the dataset ships
+both classes pre-made) and embeds a watermark into them. So the mark is
+applied *after* the synthetic image exists, and survives equally well on both
+classes.
+
+The deployment threat model is the opposite ordering:
+
+```
+deployment:  authentic image -> embed watermark -> deepfake manipulation D -> high BER signals tampering
+v1 pipeline: (already real OR already fake) -> embed watermark -> BER reflects image texture, not provenance
+```
+
+`docs/02` §1 lists `D` (deepfake manipulation) in the notation and `V =
+f_θ(T(D(x̃)))` puts `D` *after* embedding. v1 has no `D` step at all — it
+was never in scope, because applying a real face-swap to watermarked images
+needs a generative model that the zero-training constraint (docs/03 §0)
+excludes.
+
+Consequences, all of which must be stated wherever E2–E6 appear:
+
+1. `z_P` should carry ~no information about `y`, so `β₁ ≈ 0` and `F1` should
+   perform about like `F0`. If `β₁` comes out clearly non-zero, that is
+   **not** provenance signal — it is a confound (e.g. StyleGAN textures
+   carrying watermarks slightly differently from photographic ones), and it
+   would need investigating rather than celebrating.
+2. The fusion is therefore not fusing two informative evidence sources. It is
+   one informative source plus noise, which is a degenerate case of the
+   method docs/02 describes.
+3. **E1 is unaffected.** E1 asks only whether watermarking shifts a
+   detector's scores. That question is well-posed regardless of whether the
+   provenance channel is informative, so the gate result stands on its own.
+
+This is a scope limitation inherited from the 10-day/no-training constraint,
+not a bug. But it means v1 cannot substantiate the fusion half of the
+contribution, only the interference-measurement half — and the paper must
+say so plainly rather than presenting F0–F5 comparisons as though the
+provenance channel were doing work.
