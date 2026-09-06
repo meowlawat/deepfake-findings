@@ -79,3 +79,18 @@ def test_selective_risk_decreases_or_equal_as_coverage_drops():
     risk_full = metrics.selective_risk_at_coverage(y, y_prob, 1.0)
     risk_partial = metrics.selective_risk_at_coverage(y, y_prob, 0.5)
     assert risk_partial <= risk_full + 1e-9
+
+
+def test_reliability_curve_is_diagonal_when_calibrated():
+    rng = np.random.default_rng(11)
+    y_prob = rng.uniform(0, 1, 4000)
+    y_true = (rng.uniform(0, 1, 4000) < y_prob).astype(int)
+    conf, acc = metrics.reliability_curve(y_true, y_prob, n_bins=10)
+    assert len(conf) == len(acc) == 10
+    # a calibrated model's curve tracks the diagonal
+    assert np.max(np.abs(np.array(conf) - np.array(acc))) < 0.12
+
+
+def test_reliability_curve_empty_input():
+    conf, acc = metrics.reliability_curve(np.array([]), np.array([]))
+    assert conf == [] and acc == []

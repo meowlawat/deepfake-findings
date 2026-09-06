@@ -101,6 +101,28 @@ def brier_score(y_true: np.ndarray, y_prob: np.ndarray) -> float:
     return float(np.mean((y_prob - y_true) ** 2))
 
 
+def reliability_curve(y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10
+                       ) -> tuple[list[float], list[float]]:
+    """Equal-mass reliability curve: (mean predicted probability, observed
+    frequency) per bin. The plotted form of ECE - docs/02 S6's reliability
+    diagrams, which must be drawn per W group and never pooled, since pooling
+    hides exactly the effect under study.
+    """
+    y_true = np.asarray(y_true, dtype=float)
+    y_prob = np.asarray(y_prob, dtype=float)
+    if len(y_prob) == 0:
+        return [], []
+    order = np.argsort(y_prob)
+    y_true, y_prob = y_true[order], y_prob[order]
+    confidences, accuracies = [], []
+    for idx in np.array_split(np.arange(len(y_prob)), n_bins):
+        if len(idx) == 0:
+            continue
+        confidences.append(float(y_prob[idx].mean()))
+        accuracies.append(float(y_true[idx].mean()))
+    return confidences, accuracies
+
+
 def calibration_gap_by_watermark(y_true: np.ndarray, y_prob: np.ndarray, w: np.ndarray,
                                   n_bins: int = 15) -> float:
     """Delta-ECE_W = ECE(y_hat | W=1) - ECE(y_hat | W=0) - docs/02 SS6.

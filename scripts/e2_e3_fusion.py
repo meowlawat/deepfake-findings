@@ -61,12 +61,25 @@ def evaluate_model(name: str, model: fusion.FusionModel, test: fusion.FusionInpu
         )
         beta4_ci = {"point": point, "lo": lo, "hi": hi}
 
+    # reliability curve per W group, for F1 (the money figure). Split, never
+    # pooled - docs/02 S6.
+    reliability = {}
+    for group in (0, 1):
+        mask = test.w == group
+        if mask.sum() >= 10:
+            conf, acc = metrics.reliability_curve(y[mask], probs[mask], n_bins=10)
+            reliability[str(group)] = {"confidence": conf, "accuracy": acc, "n": int(mask.sum())}
+
     return {
         "model": name, "auc": auc, "ece": ece, "brier": brier,
         "delta_ece_w": d_ece_w, "aurc": aurc, "drd": drd,
         "tau_lo": tau_lo, "tau_hi": tau_hi,
         "beta4": beta4, "beta4_ci": beta4_ci,
         "coefficients": model.coef_by_name,
+        "reliability": reliability,
+        "selective_risk": {
+            str(c): metrics.selective_risk_at_coverage(y, probs, c) for c in (0.8, 0.9, 0.95)
+        },
     }
 
 
