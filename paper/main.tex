@@ -38,23 +38,37 @@ detection AUC.}
 \TODO{Do not write before Experiment E1 clears the go/no-go gate
 (docs/03-experiment-plan.md \S2).}
 
-Contributions, as planned:
+\TODO{The contribution list below is the one planned BEFORE data. E1's
+pre-registered gate returned a null (docs/06-results.md), so items 2--4 are
+not supported by v1's evidence as written and must not be claimed. Rewrite
+against what was actually measured; the honest v1 shape is items 1, 5 and 6.}
+
+Contributions:
 \begin{enumerate}
-  \item A measurement of watermark--detector interference in a \emph{fusion}
-        setting, across watermark schemes spanning hand-crafted to learned, and
-        across detector families, reported \emph{net of a PSNR-matched
-        payload-free perturbation}. This control distinguishes structured
-        interference from a detector's generic fragility under any imperceptible
-        perturbation --- a confound that a raw $\Delta$AUC cannot separate
-        (docs/02-method.md \S3.1).
-  \item The observation that this interference manifests as a group-conditional
-        calibration gap, and therefore breaks the optimality of risk-derived
-        abstention thresholds --- a failure invisible to accuracy and AUC.
-  \item An interpretable interference-aware fusion rule that restores
-        calibration, with the interference recoverable as a single readable
-        coefficient.
-  \item An evaluation in the realistic mixed regime, where only a small fraction
-        of media carries a mark.
+  \item A measurement of watermark--detector interference reported \emph{net of
+        a PSNR-matched payload-free perturbation}. This control distinguishes
+        structured interference from a detector's generic fragility under any
+        imperceptible perturbation --- a confound a raw $\Delta$AUC cannot
+        separate (docs/02-method.md \S3.1), and one no prior work in this space
+        applies. \emph{Result: net of the control, no watermark-specific
+        interference in detector ranking is detectable at $n{=}300$.}
+  \item \TODO{NOT SUPPORTED --- planned claim that interference manifests as a
+        group-conditional calibration gap. Pending E2/E3.}
+  \item \TODO{NOT SUPPORTED as a demonstrated fix --- the provenance channel is
+        non-informative by construction in v1 (no manipulation step $D$ after
+        embedding), so the fusion comparison cannot substantiate a
+        ``restored calibration'' claim. State the limitation instead.}
+  \item \TODO{Mixed-regime ($\rho$) evaluation --- pending E5.}
+  \item A pre-registered go/no-go protocol with the null branch written down in
+        advance, and the negative result reported rather than reframed. The gate
+        threshold, the fallback framing, and the decision to stop were fixed
+        before the data was seen.
+  \item A cautionary finding on zero-shot detector transfer: a widely-downloaded
+        community deepfake detector advertising $98.7\%$ accuracy operates at
+        $\mathrm{AUC}=0.54$ --- chance --- on a standard synthesis distribution
+        it was not trained on. Reported because a detector-floor precondition
+        caught it; without one, four meaningless rows would have entered the
+        interference table looking like measurements.
 \end{enumerate}
 
 \section{Related Work}
