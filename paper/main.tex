@@ -134,8 +134,45 @@ substitution here and in the abstract (docs/04 R8) --- do not let
 ``deepfake'' stand unqualified if the data doesn't support it.}
 
 \section{Results}
-\subsection{Interference exists (E1)}
-\TODO{Table T1, Figure F4.}
+
+\subsection{Detector floor check (E0)}
+\input{generated/table_e0}
+
+Before any interference quantity is interpreted, each detector must clear a
+baseline AUC floor on unwatermarked data: a detector near chance makes
+$\Delta$AUC a measurement of noise, indistinguishable from a genuine null.
+
+One of the two candidate detectors fails this check outright. A
+widely-downloaded community deepfake detector whose model card reports
+$98.70\%$ test accuracy achieves $\mathrm{AUC}=0.5365$ on our evaluation
+distribution --- statistically indistinguishable from chance. Its
+interference rows are reported in Table~\ref{tab:t1} for completeness and
+excluded from all interpretation.
+
+We report this because it generalises beyond our setting: published zero-shot
+detector accuracies are quoted on the distribution a model was tuned for, and
+a precondition check is the only thing standing between such a model and a
+results table full of confident noise.
+
+\subsection{Interference, net of a payload-free control (E1)}
+\label{sec:e1}
+\input{generated/table_t1}
+
+$\Delta$AUC alone cannot distinguish structured, watermark-specific
+interference from a detector's generic fragility under \emph{any}
+imperceptible perturbation. We therefore report every quantity net of a
+payload-free control ($S=\emptyset$) matched per image to the corresponding
+watermark's PSNR (\S\ref{sec:method}).
+
+\TODO{State the gate outcome from docs/06-results.md: on the one detector
+clearing E0, $\Delta$AUC$_{net}$ is $+0.0006$ (dwtDctSvd) and $-0.0134$
+(rivaGan), both below the pre-registered $0.02$ threshold. Report the
+bootstrap CIs from results/e1\_bootstrap.json and frame the null as ``what
+effect sizes does the interval rule out?'' --- not as demonstrated absence.}
+
+\TODO{Report $\Delta\mu_{net}$ separately, and be explicit that any
+discussion of the location shift is post-hoc with respect to a gate
+pre-registered on $\Delta$AUC$_{net}$.}
 \subsection{It propagates into fusion (E2)}
 \TODO{Figure F1 --- reliability diagrams split by $W$. Money figure.}
 \subsection{Interference-aware fusion restores calibration (E3)}
