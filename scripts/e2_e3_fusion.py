@@ -32,7 +32,8 @@ from deepfake_interference import stats
 from deepfake_interference.pipeline import build_fusion_dataset
 
 
-def evaluate_model(name: str, model: fusion.FusionModel, test: fusion.FusionInputs, cfg: dict) -> dict:
+def evaluate_model(name: str, model: fusion.FusionModel, test: fusion.FusionInputs, cfg: dict,
+                    fit_data: fusion.FusionInputs) -> dict:
     probs = model.predict_proba(test)
     y = test.y
 
@@ -54,12 +55,17 @@ def evaluate_model(name: str, model: fusion.FusionModel, test: fusion.FusionInpu
             m = fusion.fit(name, data)
             return fusion.interference_coefficient(m)
 
+        # Bootstrap the CALIBRATION set, because that is the data beta_4 was
+        # actually fit on. An earlier version bootstrapped refits on the TEST
+        # set while reporting the calibration fit's point estimate - two
+        # different quantities, so the interval could legitimately fail to
+        # contain the point it was reported beside.
         point, lo, hi = stats.bootstrap_ci(
-            {"v": test.v, "z_p": test.z_p, "w": test.w, "b": test.b, "y": test.y},
+            {"v": fit_data.v, "z_p": fit_data.z_p, "w": fit_data.w, "b": fit_data.b, "y": fit_data.y},
             _beta4_stat, n_boot=cfg["fusion"]["n_bootstrap"], ci=cfg["fusion"]["bootstrap_ci"],
             seed=cfg["fusion"]["bootstrap_seed"],
         )
-        beta4_ci = {"point": point, "lo": lo, "hi": hi}
+        beta4_ci = {"point": point, "lo": lo, "hi": hi, "bootstrapped_on": "calibration"}
 
     # reliability curve per W group, for F1 (the money figure). Split, never
     # pooled - docs/02 S6.
@@ -111,7 +117,7 @@ def main() -> int:
     results = []
     for model_name in cfg["fusion"]["models"]:
         model = fusion.fit(model_name, cal_data)
-        result = evaluate_model(model_name, model, test_data, cfg)
+        result = evaluate_model(model_name, model, test_data, cfg, fit_data=cal_data)
         results.append(result)
         beta4_str = f"beta4={result['beta4']:+.4f}" if result["beta4"] is not None else "beta4=n/a"
         print(f"  {model_name}: AUC={result['auc']:.3f} ECE={result['ece']:.4f} "
