@@ -62,11 +62,86 @@ demonstrated-reliable deployment mechanism at this hash construction
 
 ## E0 — detector floor check
 
-_Filled from `results/e1_full_run.json`._
+From `results/e1_full_run.json`, n = 300, clean channel (`W = 0`):
+
+| Detector | Baseline AUC | Floor (0.80) | Verdict |
+| --- | --- | --- | --- |
+| `Wvolf/ViT_Deepfake_Detection` | **0.5365** | fails | at chance |
+| `Skullly/DeepFake-EN-B6` | **0.8952** | passes | usable |
+
+**The ViT detector is at chance on this dataset.** Its model card advertises
+98.70% test accuracy. On StyleGAN-synthesis vs. real FFHQ it discriminates
+barely better than a coin. Every ViT row in the interference table below is
+therefore noise around a non-functional detector and carries no
+information about interference; they are reported for completeness and
+excluded from interpretation.
+
+This is a result in its own right, and an unflattering one for the field's
+practice of publishing zero-shot detectors with headline accuracies: a
+community detector advertising ~99% transfers to a different synthesis
+distribution at ~0.54 AUC. It also vindicates E0 existing as a *precondition*
+rather than a formality — without it, four meaningless rows would have gone
+into T1 looking like measurements.
+
+The EfficientNet detector's 0.8952 sits **below** the 0.97
+leakage-suspicion threshold (docs/04 R14), so the leakage flag does not
+fire. That is weak evidence against contamination, not proof of its absence.
 
 ## E1 — interference (T1) and the go/no-go gate
 
-_Filled from `results/e1_full_run.json`._
+From `results/e1_full_run.json`, n = 300. `∅` = PSNR-matched
+null-perturbation control.
+
+| Detector | Scheme | Δμ | Δσ | ΔAUC | ΔAUC(∅) | **ΔAUC_net** |
+| --- | --- | --- | --- | --- | --- | --- |
+| vit *(dead — ignore)* | dwtDctSvd | +0.019 | 1.005 | +0.0162 | −0.0022 | +0.0184 |
+| vit *(dead — ignore)* | rivaGan | −0.541 | 0.992 | +0.0024 | −0.0041 | +0.0065 |
+| **effnet** | dwtDctSvd | −0.054 | 0.983 | +0.0015 | +0.0009 | **+0.0006** |
+| **effnet** | rivaGan | +0.679 | 1.003 | −0.0159 | −0.0025 | **−0.0134** |
+
+### Gate verdict: FAIL, as pre-registered
+
+The gate threshold (|ΔAUC_net| ≥ 0.02, fixed in advance) is not met by either
+scheme on the only working detector: +0.0006 and −0.0134. **No
+watermark-specific interference in detector *ranking* is detectable here.**
+
+Per `docs/03` E1 and `docs/04` R1, this is the branch that was written down
+in advance: stop, and re-scope toward a bounded replication/negative result,
+rather than continue building on a premise that did not hold.
+
+### Two things that must not be spun
+
+**1. A null result at n = 300 without confidence intervals is not evidence of
+absence.** With 150 per class, the standard error on a single AUC is roughly
+0.03, which is *larger than both net effects*. The honest statement is "no
+effect detectable at this sample size," and the CI almost certainly does not
+exclude effects large enough to matter. `scripts/e1_interference.py` now
+persists raw per-image records so the bootstrap can be run without a
+17-minute re-score; **the CIs are required before this is written up as a
+negative result.**
+
+**2. Δμ is large where ΔAUC is ~zero, and the gate does not test Δμ.**
+effnet + rivaGan shows Δμ = **+0.679 logits** with Δσ = 1.003 — a near-pure
+*location* shift with no scale change. A uniform location shift barely moves
+AUC (ranking is preserved) but is precisely what invalidates a posterior
+calibrated on unwatermarked media — which is this paper's actual thesis
+(calibration, not accuracy; docs/02 §5's "load-bearing dependency").
+
+So the gate may be thresholding the wrong quantity for the hypothesis it
+guards. **This observation is post-hoc and is not claimed as a result.**
+Changing the gate's target after seeing the data is exactly the move that
+turns a null into a false positive. It is recorded here as a *design flaw in
+the gate*, and the legitimate test of it is E2/E3's ΔECE_W and β₄, which were
+pre-registered as the calibration measurements and are computed on data the
+gate did not select.
+
+A further caveat on Δμ specifically: an earlier version of
+`e1_interference.py` subtracted the `∅` control from ΔAUC only, leaving
+Δμ/Δσ **uncontrolled**. The Δμ values in the table above are therefore raw,
+not net, and part of that +0.679 may be generic perturbation response rather
+than anything watermark-specific. The script now computes `delta_mu_null`
+and `delta_mu_net`; the table must be regenerated before Δμ is discussed
+anywhere.
 
 ## E2/E3 — fusion and calibration (T2, F1, F2)
 

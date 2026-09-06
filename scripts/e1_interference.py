@@ -101,11 +101,24 @@ def compute_interference_table(records: list[dict], schemes: list[str], detector
             d_auc_null = metrics.delta_auc(y_null, v_null, y_clean, v_clean)
             d_auc_net = metrics.delta_auc_net(d_auc_scheme, d_auc_null)
 
+            # The null arm must be subtracted from EVERY interference
+            # quantity, not just AUC. An earlier version controlled only
+            # delta_auc and reported delta_mu/delta_sigma raw, which left the
+            # location shift - the quantity that actually bears on
+            # calibration (docs/02 S3) - with no control at all.
+            d_mu_scheme = metrics.delta_mu(v_wm, v_clean)
+            d_mu_null = metrics.delta_mu(v_null, v_clean)
+            d_sigma_scheme = metrics.delta_sigma(v_wm, v_clean)
+            d_sigma_null = metrics.delta_sigma(v_null, v_clean)
+
             rows.append({
                 "detector": detector,
                 "scheme": scheme,
-                "delta_mu": metrics.delta_mu(v_wm, v_clean),
-                "delta_sigma": metrics.delta_sigma(v_wm, v_clean),
+                "delta_mu": d_mu_scheme,
+                "delta_mu_null": d_mu_null,
+                "delta_mu_net": d_mu_scheme - d_mu_null,
+                "delta_sigma": d_sigma_scheme,
+                "delta_sigma_null": d_sigma_null,
                 "delta_auc": d_auc_scheme,
                 "delta_auc_null": d_auc_null,
                 "delta_auc_net": d_auc_net,
@@ -180,6 +193,14 @@ def main() -> int:
     Path(args.out).write_text(json.dumps(
         {"e0": e0, "e0_passed": e0_ok, "rows": rows, "gate_passed": passed, "gate_message": message},
         indent=2))
+
+    # Persist the raw per-image scores alongside the summary. Without these,
+    # quantifying uncertainty on a null result means re-scoring every image
+    # (~17 min on CPU) - and a null result reported without CIs is not a
+    # result, it is an absence of one. docs/03 S4 requires the bootstrap.
+    records_path = Path(args.out).with_name(Path(args.out).stem + "_records.json")
+    records_path.write_text(json.dumps(records))
+    print(f"Raw records written to {records_path}")
 
     print()
     print("=== E0 detector floor check ===")
