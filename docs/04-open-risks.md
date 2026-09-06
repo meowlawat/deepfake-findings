@@ -243,18 +243,22 @@ supported by what's been measured so far. As written that claim is aspirational.
 mechanism (as opposed to a stated design correction to the source material's
 AES-256 choice, which stands on its own merits):**
 
-1. Re-run `verification_reliability_rate` on real photographs from whichever
-   dataset v1 settles on (docs/03 S0) - synthetic smooth noise may simply be
-   a bad proxy for real image statistics in a way that happens to break
-   average-hashing specifically.
-2. If the real-photo rate is still high, replace the average-hash with an
-   actual published perceptual hash (pHash/DCT-based, or a proper fuzzy
-   commitment scheme) rather than continuing to hand-tune `DEFAULT_HASH_SIZE`
-   by trial and error - the trial-and-error approach has now failed to
-   generalize once, which is itself the signal to stop tuning and change
-   primitive.
-3. Report whatever the measured rate is, plainly, wherever `docs/02` S2.1 is
+1. **Done, this session, once real data was fetched (`scripts/fetch_dataset.py`,
+   see docs/03 S0).** Re-ran `verification_reliability_rate` on real
+   photographs from `TheKernel01/140k-Real-and-Fake-Faces` (the HF mirror of
+   the v1 Kaggle dataset). Result: **7% false-negative rate**, n=100, for
+   *both* `dwtDctSvd` and `rivaGan` - a large improvement on the 62.5%
+   measured on synthetic smooth-noise content, confirming that synthetic
+   content was indeed a bad proxy for this specific failure mode. 7% is a
+   real, reportable number, not zero: state it plainly wherever the crypto
+   binding is discussed, and do not round it down to "works."
+2. At 7%, replacing the average-hash with a proper perceptual hash / fuzzy
+   commitment scheme is a nice-to-have for a deployment claim, not a blocker
+   for v1's experiments (which use ground-truth `W` regardless, per
+   `fusion.py`). Leave it as a named extension unless time allows more.
+3. Report the measured 7% rate, plainly, wherever `docs/02` S2.1 is
    presented in the paper - do not let "we corrected AES-256 to Ed25519" read
-   as "and it works," when only the unforgeability *argument* has been
-   checked, not the hash-stability *mechanism* the argument depends on to be
+   as "and it works perfectly," when only the unforgeability *argument* has
+   been checked at 100% and the hash-stability *mechanism* the argument
+   depends on to be
    invokable at all.

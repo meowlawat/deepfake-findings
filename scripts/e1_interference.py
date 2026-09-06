@@ -40,7 +40,16 @@ def build_records(items, cfg, limit=None, seed=0):
     dependency at this stage.
     """
     if limit:
-        items = items[:limit]
+        # stratified, not a raw slice - data.discover() returns all of one
+        # class before the other, so items[:limit] silently produced a
+        # single-class subset (caught by a timing dry run: AUC came back NaN
+        # for every cell, which is auc()'s documented behavior on one class,
+        # not a bug in the metric).
+        by_label: dict[int, list] = {}
+        for it in items:
+            by_label.setdefault(it.label, []).append(it)
+        per_class = max(1, limit // max(1, len(by_label)))
+        items = [it for group in by_label.values() for it in group[:per_class]]
 
     detectors = {name: det_mod.Detector(model_id) for name, model_id in cfg["detectors"].items()
                  if name in ("vit", "effnet")}
@@ -139,12 +148,44 @@ def main() -> int:
     print(f"Built {len(records)} score records in {time.time() - t0:.1f}s")
 
     detector_names = [n for n in cfg["detectors"] if n in ("vit", "effnet")]
-    rows = compute_interference_table(records, cfg["watermark"]["schemes"], detector_names)
 
-    passed, message = gate_verdict(rows)
+    # E0 - docs/03: baseline AUC floor at W=0, BEFORE trusting anything E1
+    # computes. A detector near chance makes Delta_AUC a measurement of
+    # noise; a suspiciously high AUC is a leakage flag (docs/04 R14), not a
+    # clean pass. Computed here rather than as a separate pass over the data,
+    # since the clean-arm scores this needs are already gathered by
+    # build_records - no reason to score every image with both detectors twice.
+    floor = cfg["detectors"]["floor_auc"]
+    leakage_suspicion = cfg["detectors"]["leakage_suspicion_auc"]
+    e0 = {}
+    for detector in detector_names:
+        clean = [r for r in records if r["detector"] == detector and r["arm"] == "clean"]
+        y = np.array([r["y"] for r in clean])
+        v = np.array([r["v"] for r in clean])
+        baseline_auc = metrics.auc(y, v)
+        status = "PASS"
+        if np.isnan(baseline_auc) or baseline_auc < floor:
+            status = "FAIL (below floor)"
+        elif baseline_auc >= leakage_suspicion:
+            status = "PASS, but SUSPECT LEAKAGE (docs/04 R14) - report this number, don't round it down"
+        e0[detector] = {"baseline_auc": None if np.isnan(baseline_auc) else baseline_auc,
+                         "n": len(clean), "status": status}
+
+    e0_ok = all("FAIL" not in v["status"] for v in e0.values())
+
+    rows = compute_interference_table(records, cfg["watermark"]["schemes"], detector_names)
+    passed, message = gate_verdict(rows) if e0_ok else (False, "E0 floor check failed - see e0 block; E1 not evaluated on a detector that fails its own floor")
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_text(json.dumps({"rows": rows, "gate_passed": passed, "gate_message": message}, indent=2))
+    Path(args.out).write_text(json.dumps(
+        {"e0": e0, "e0_passed": e0_ok, "rows": rows, "gate_passed": passed, "gate_message": message},
+        indent=2))
+
+    print()
+    print("=== E0 detector floor check ===")
+    for detector, v in e0.items():
+        auc_str = f"{v['baseline_auc']:.4f}" if v["baseline_auc"] is not None else "NaN"
+        print(f"  {detector:8s} baseline AUC (W=0, n={v['n']}) = {auc_str}  -> {v['status']}")
 
     print()
     print("=== E1 interference table (T1) ===")
@@ -156,7 +197,7 @@ def main() -> int:
     print(f"GATE: {'PASS' if passed else 'FAIL'} - {message}")
     print(f"Results written to {args.out}")
 
-    return 0 if passed else 1
+    return 0 if (e0_ok and passed) else 1
 
 
 if __name__ == "__main__":
