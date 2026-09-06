@@ -211,9 +211,16 @@ def selective_risk_at_coverage(y_true: np.ndarray, y_prob: np.ndarray,
     return float(np.mean(pred != y_true[keep_idx]))
 
 
+# np.trapz was removed in NumPy 2.0 in favour of np.trapezoid. Bind once here
+# rather than at each call site so the codebase runs on both major versions -
+# the machines this has to work on (a local 3050 box, Kaggle's stock image)
+# do not necessarily agree on NumPy major version.
+_trapezoid = getattr(np, "trapezoid", None) or np.trapz
+
+
 def area_under_risk_coverage(y_true: np.ndarray, y_prob: np.ndarray,
                               n_points: int = 100) -> float:
     """AURC via trapezoidal integration of the risk-coverage curve."""
     coverages = np.linspace(1.0 / len(y_prob), 1.0, n_points)
     risks = [selective_risk_at_coverage(y_true, y_prob, c) for c in coverages]
-    return float(np.trapz(risks, coverages))
+    return float(_trapezoid(risks, coverages))

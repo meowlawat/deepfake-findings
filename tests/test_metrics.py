@@ -94,3 +94,25 @@ def test_reliability_curve_is_diagonal_when_calibrated():
 def test_reliability_curve_empty_input():
     conf, acc = metrics.reliability_curve(np.array([]), np.array([]))
     assert conf == [] and acc == []
+
+
+def test_area_under_risk_coverage_runs_and_is_bounded():
+    """Regression test: this function was calling np.trapz, removed in NumPy
+    2.0, and no test exercised it - so the suite stayed green while every
+    E2-E6 script would crash on the first call. Coverage gap, not a flake.
+    """
+    rng = np.random.default_rng(5)
+    y = (rng.uniform(0, 1, 500) < 0.5).astype(int)
+    y_prob = np.clip(y + rng.normal(0, 0.3, 500), 0, 1)
+    aurc = metrics.area_under_risk_coverage(y, y_prob)
+    assert np.isfinite(aurc)
+    assert 0.0 <= aurc <= 1.0
+
+
+def test_decision_risk_deviation_runs():
+    rng = np.random.default_rng(6)
+    y = (rng.uniform(0, 1, 300) < 0.5).astype(int)
+    y_prob = np.clip(y + rng.normal(0, 0.3, 300), 0, 1)
+    tau_lo, tau_hi = metrics.chow_thresholds(100, 20, 1)
+    drd = metrics.decision_risk_deviation(y, y_prob, tau_lo, tau_hi, 100, 20, 1)
+    assert np.isfinite(drd) and drd >= 0
