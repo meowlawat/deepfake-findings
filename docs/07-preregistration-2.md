@@ -96,3 +96,51 @@ Written down now so it cannot be reframed later:
   **translates** a detector's scores without **reordering** them: invisible to
   AUC, consequential for any threshold calibrated on unmarked media. This is
   the calibration thesis, confirmed on data never used to generate it.
+
+---
+
+## Protocol deviation log
+
+**Disclosed rather than hidden. A peek that is recorded costs credibility once;
+a peek that is discovered costs it permanently.**
+
+### Deviation 1 — interim look at confirmatory data, n=400 of 20,000
+
+At roughly 2% of the validation run, `scripts/aggregate_large.py` was executed
+against the four completed shards. The stated and genuine purpose was to
+verify that the aggregation path works on real shard files before ~7 hours of
+compute depended on it — the script had until then only been exercised on a
+36-image synthetic smoke test.
+
+That justification is real, but the effect is that confirmatory-split results
+for H1 and H2 were observed mid-run. What was seen:
+
+| Quantity | dwtDctSvd | rivaGan |
+| --- | --- | --- |
+| `Δ_AUC_net` | −0.0012 [−0.0122, +0.0103] | −0.0002 [−0.0108, +0.0100] |
+| `Δ_μ_net` | +0.907 [+0.701, +1.115] | +1.444 [+1.176, +1.687] |
+
+Both consistent with H1 and H2 as pre-registered.
+
+**Why this does not invalidate the pre-registration, and the one way it could:**
+
+- The corpus remains fixed at the pre-committed 20,000 images. The run was
+  **not** stopped, shortened, or extended in response to what was seen. The
+  stopping rule above is unchanged and was not exercised.
+- No hypothesis, threshold, effect-size floor, or analysis choice was altered
+  after the look. All were committed in the parent commit of this file.
+- The risk a peek normally introduces is *optional stopping* — halting when
+  the numbers look good, which inflates false-positive rates. That risk is
+  only realised if the observer acts on the peek. Here the only action taken
+  was to let the run continue unchanged.
+
+**The honest residual risk:** knowing the direction of an interim result can
+bias later discretionary choices even without conscious intent. The defence is
+that no discretion remains — every threshold and comparison is fixed in
+writing above, and the final numbers are produced by a script that takes no
+judgement calls. Any reader who distrusts that can check: the analysis code
+and the thresholds both predate this deviation in git history.
+
+**Rule adopted going forward:** no further aggregation runs against
+confirmatory splits until all shards are complete. Pipeline validation, if
+needed again, uses the `test` split, which is already exploratory for H1/H2.
