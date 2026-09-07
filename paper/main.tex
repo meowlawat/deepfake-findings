@@ -159,18 +159,44 @@ valid iff $c_R/c_{FN} + c_R/c_{FP} < 1$, and optimal only if $\hat{y}$ is
 calibrated --- the dependency this paper is about.
 
 \section{Experimental Setup}
-\TODO{From docs/03-experiment-plan.md \S1 (v1 fast-track grid). State plainly:
-one dataset, two watermark schemes (one hand-crafted, one learned, both
-pretrained/zero-training), two zero-shot pretrained detector families, a
-reduced three-class transform suite. No identity-level splits are available
-for this dataset --- state the split protocol actually used and its
-limitation relative to identity-level splitting. State the zero-shot detector
-setting explicitly (docs/04 R10): this measures interference against
-detectors not trained for this task/distribution, which is a different claim
-than measuring it against a purpose-trained detector. If the primary dataset
-is GAN-synthesis rather than face-swap/reenactment content, name that
-substitution here and in the abstract (docs/04 R8) --- do not let
-``deepfake'' stand unqualified if the data doesn't support it.}
+
+\paragraph{Data.} A balanced subset ($150$ real, $150$ synthetic) of a public
+corpus of StyleGAN-generated faces against real photographs. This is
+whole-image synthesis, \emph{not} face-swap or reenactment manipulation; we use
+``synthetic-image detection'' rather than ``deepfake detection'' throughout,
+and Limitations states what that substitution costs. The corpus carries no
+identity metadata, so splits are stratified at the image level with a fixed
+seed rather than at identity level; confidence intervals are correspondingly
+sample-level bootstraps, a weaker guarantee than identity-clustered
+resampling.
+
+\paragraph{Watermark schemes.} Two schemes spanning the hand-crafted/learned
+divide, both used pretrained with no training on our part: a DWT-DCT-SVD
+transform-domain scheme, and RivaGAN, a learned encoder/decoder. Payload
+length is fixed at $32$ bits for both so the comparison is at matched
+capacity. Measured imperceptibility is $36.9$\,dB PSNR / $0.967$ SSIM for the
+former and $40.2$\,dB / $0.983$ for the latter.
+
+\paragraph{Null-perturbation control.} For every image and every scheme we
+additionally generate a payload-free perturbation binary-searched to match
+\emph{that scheme's PSNR on that image} to within $0.5$\,dB. All interference
+quantities are reported net of this arm. Note the residual it does not
+control: PSNR matching is not spectral matching, so a mid-frequency
+transform-domain mark and our noise model can agree on PSNR while differing
+in where their energy sits. The control therefore bounds generic
+perturbation sensitivity; it does not fully isolate structure.
+
+\paragraph{Detectors.} Two pretrained, publicly available checkpoints from
+different backbone families --- a ViT and an EfficientNet-B6 --- used
+zero-shot, with no fine-tuning. We take the raw logit difference
+$V=\ell_{\text{fake}}-\ell_{\text{real}}$ rather than a softmax confidence.
+Neither checkpoint discloses its training data, so all reported quantities are
+within-model, within-image deltas.
+
+\paragraph{Protocol.} The detector floor (E0), the gate threshold on
+$\Delta\mathrm{AUC}_{net}$, and the fallback framing for a null were fixed
+before the data was scored. Every number below is produced by released code
+from a single configuration file.
 
 \section{Results}
 
