@@ -72,12 +72,51 @@ Contributions:
 \end{enumerate}
 
 \section{Related Work}
-\TODO{Three subsections. Cite only from paper/refs.bib.}
+
 \subsection{Proactive watermarking for deepfake forensics}
+A substantial line of work embeds a mark at creation time and reads it back to
+establish provenance, increasingly unifying provenance with detection or
+localisation in a single scheme~\cite{wu2026allinone,zeng2026lava}. Our concern
+is orthogonal to the design of any particular scheme: we ask what embedding a
+mark does to a passive detector that inspects the same pixels, and we treat
+watermark strength as an experimental axis (one hand-crafted transform-domain
+scheme, one learned encoder/decoder) rather than proposing a new one.
+
 \subsection{Passive detection and its robustness}
+Passive detectors infer manipulation from residual synthesis artefacts. Their
+robustness under degradation is an active concern, and recent benchmarking
+finds that reported accuracy transfers poorly once inputs are
+perturbed~\cite{hopf2026ntire}. Watermark robustness has been benchmarked in
+the same spirit~\cite{an2024waves}. Our E0 result is a sharp instance of the
+transfer problem: a detector advertising $98.70\%$ accuracy operates at chance
+on a synthesis distribution it was not tuned for.
+
 \subsection{Interference between the two paradigms}
-\TODO{This is where wu2024watermarksbugs and muller2026watermarkshortcut carry
-the argument, and where the gap is stated against guo2024passiveorwatermark.}
+The premise this work tests is due to Wu et al.~\cite{wu2024watermarksbugs},
+who argue that watermarking models devised for genuine images ``may harm the
+deployed Deepfake detectors when directly applied to forged images, since the
+watermarks are prone to overlap with the forgery signals used for detection'',
+and who respond with AdvMark, fine-tuning the \emph{watermark} so it helps
+rather than hurts. The same pathology is reported independently in
+audio~\cite{muller2026watermarkshortcut}, where detectors latch onto the mark
+as a shortcut for ``synthetic''. Cross-modal replication is what makes the
+effect worth treating as structural rather than incidental.
+
+Guo et al.~\cite{guo2024passiveorwatermark} benchmark passive against
+watermark-based detection head-to-head and conclude the latter dominates, but
+theirs is explicitly a comparison: the two paradigms are never combined, and
+the question of whether marking degrades the passive detectors being
+benchmarked is not asked.
+
+Three gaps follow, and this paper addresses the first two. First, prior
+interference results are reported as raw degradation, with no control
+separating watermark-specific interference from a detector's generic
+fragility under any imperceptible perturbation --- we introduce a
+PSNR-matched payload-free arm for exactly this. Second, the effect has not
+been tested under a pre-registered null hypothesis; we fix a gate threshold
+and a fallback framing in advance and report the outcome that follows. Third,
+the consequences for a fused decision rule remain open; our corpus cannot
+settle that (see Limitations), and we do not claim to.
 
 \section{Method}
 \subsection{Provenance evidence as a likelihood ratio}
