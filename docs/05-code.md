@@ -99,3 +99,12 @@ didn't catch:
 
 All three are the kind of bug that a plan-only document cannot catch - they
 only showed up once equations became code that had to actually run.
+
+## Verification status of the paper source
+
+`paper/main.tex` has **not** been compiled — no LaTeX toolchain exists in the
+environment it was written in. What has been checked is structural only:
+`\begin`/`\end` environments balance and braces balance (0 delta). Compile it
+on the local machine before believing it builds; in particular the
+`\input{generated/...}` table includes only resolve after
+`scripts/make_report.py` has run.
