@@ -240,3 +240,59 @@ publicly available checkpoints. The null rests on one detector, and no amount
 of further screening fixes that — it is a property of what exists, not of
 effort. This belongs in Limitations as a hard constraint rather than as
 future work.
+
+## CONFIRMATORY RESULT — validation split, n = 20,000
+
+Tests the hypotheses pre-registered in `docs/07-preregistration-2.md`, on a
+split never used to generate them. From `results/large_summary.json`.
+
+**E0.** `Skullly/DeepFake-EN-B6` baseline AUC = **0.8733** (n = 20,000).
+Clears the 0.80 floor; below the 0.97 leakage-suspicion threshold.
+
+**E1, net of the PSNR-matched payload-free control:**
+
+| Scheme | `Δ_μ_net` (H1) | `Δ_AUC_net` (H2) |
+| --- | --- | --- |
+| `dwtDctSvd` | **+0.8373** [+0.8071, +0.8667] | +0.0049 [+0.0032, +0.0066] |
+| `rivaGan` | **+1.3530** [+1.3169, +1.3865] | −0.0051 [−0.0071, −0.0033] |
+
+### Verdicts against the pre-registered criteria
+
+**H1 — SUPPORTED, both schemes.** `Δ_μ_net` excludes zero and exceeds the
+0.10-logit effect floor by roughly 8× and 13×. Direction is positive, as
+predicted. Watermarking shifts the detector's score distribution toward
+"fake" by 0.84–1.35 logits, net of what an equally-imperceptible payload-free
+perturbation does.
+
+**H2 — HOLDS, with a caveat that must be stated.** `Δ_AUC_net` stays inside
+the pre-registered ±0.02 band for both schemes. But at n = 20,000 the
+intervals now *exclude zero*: there is a real ranking effect of roughly
+±0.005 AUC. It is statistically detectable and practically negligible, and
+the two schemes carry **opposite signs** (+0.0049 vs −0.0051), so there is no
+consistent direction to it.
+
+This is precisely the case the effect-size floor was written in to handle: at
+large n a CI excludes zero for effects too small to move any decision.
+Reporting "significant ranking interference" off these numbers would be
+technically true and substantively false. The honest statement is that the
+ranking effect is ~0.005 AUC — two orders of magnitude smaller than the
+location shift, and smaller than the difference between the two schemes.
+
+**H3 — not yet testable.** Requires the train split.
+
+### What this establishes
+
+**Watermarking translates a detector's scores without meaningfully reordering
+them.** A ~1-logit uniform shift is invisible to AUC — ranking is preserved,
+so every accuracy-style metric reports business as usual — while being fatal
+to any decision threshold calibrated on unmarked media. A system that fixes
+its operating point on clean data and then deploys on watermarked traffic is
+applying a threshold to a distribution that has moved out from under it.
+
+This is the calibration thesis, confirmed on data that never generated it,
+at n = 20,000 with intervals roughly 7× tighter than the exploratory slice.
+
+The earlier n=300 gate failure (`Δ_AUC_net` ≈ 0) was therefore **correct, not
+underpowered** — it was measuring ranking, and ranking genuinely does not
+move. The premise it appeared to refute was never a ranking claim; it was a
+calibration claim that the gate was not built to see.
