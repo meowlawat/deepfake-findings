@@ -304,15 +304,50 @@ imperceptible perturbation. We therefore report every quantity net of a
 payload-free control ($S=\emptyset$) matched per image to the corresponding
 watermark's PSNR (\S\ref{sec:method}).
 
-\TODO{State the gate outcome from docs/06-results.md: on the one detector
-clearing E0, $\Delta$AUC$_{net}$ is $+0.0006$ (dwtDctSvd) and $-0.0134$
-(rivaGan), both below the pre-registered $0.02$ threshold. Report the
-bootstrap CIs from results/e1\_bootstrap.json and frame the null as ``what
-effect sizes does the interval rule out?'' --- not as demonstrated absence.}
+\subsection{Confirmatory result ($n = 20{,}000$)}
+\label{sec:confirm}
 
-\TODO{Report $\Delta\mu_{net}$ separately, and be explicit that any
-discussion of the location shift is post-hoc with respect to a gate
-pre-registered on $\Delta$AUC$_{net}$.}
+An exploratory pass at $n{=}300$ found no watermark-specific effect on
+detector \emph{ranking}: $\Delta\mathrm{AUC}_{net}$ fell inside a
+pre-registered $\pm 0.02$ band. Repairing an unrelated defect --- the null arm
+was being subtracted from $\Delta\mathrm{AUC}$ but not from $\Delta\mu$ ---
+exposed a quantity that had not been examined, and it was large. Because that
+observation was post-hoc with respect to the original gate, we pre-registered
+it as a hypothesis and tested it on a split that had never been scored.
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Scheme & $\Delta\mu_{net}$ (H1) & $\Delta\mathrm{AUC}_{net}$ (H2) \\
+\midrule
+DWT-DCT-SVD & $\mathbf{+0.837}$ [$+0.807$, $+0.867$] & $+0.0049$ [$+0.0032$, $+0.0066$] \\
+RivaGAN     & $\mathbf{+1.353}$ [$+1.317$, $+1.387$] & $-0.0051$ [$-0.0071$, $-0.0033$] \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{H1 is supported for both schemes.} The location shift exceeds the
+pre-registered $0.10$-logit effect floor by roughly $8\times$ and $13\times$,
+in the predicted direction, with intervals excluding zero.
+
+\textbf{H2 holds, with a caveat we state rather than bury.} $\Delta\mathrm{AUC}_{net}$
+remains inside the $\pm 0.02$ band, but at this sample size its intervals
+exclude zero: a ranking effect of roughly $\pm 0.005$ AUC is real. It is also
+negligible, and the two schemes carry \emph{opposite signs}, so it has no
+consistent direction. This is the case the effect-size floor was written to
+handle --- at large $n$ an interval excludes zero for effects too small to
+move any decision, and reporting ``significant ranking interference'' from
+these numbers would be technically true and substantively false.
+
+The gap between the two columns is the result. A watermark moves the score
+distribution by about one logit while leaving the ordering essentially intact
+--- two orders of magnitude separate the effects. Every accuracy-style metric
+reports business as usual, and every decision threshold calibrated on unmarked
+media is now applied to a distribution that has shifted beneath it.
+
+This also reframes the earlier null rather than overturning it. That gate
+measured ranking, and ranking genuinely does not move; the effect it appeared
+to rule out was never a ranking effect.
 \subsection{It propagates into fusion (E2)}
 \TODO{Figure F1 --- reliability diagrams split by $W$. Money figure.}
 \subsection{Interference-aware fusion restores calibration (E3)}

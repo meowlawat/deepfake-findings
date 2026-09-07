@@ -123,13 +123,21 @@ def run_split(split: str, cfg, args, detectors) -> int:
     payload_bits = cfg["watermark"]["payload_bits"]
     tol_db = cfg["watermark"]["null_tolerance_db"]
     image_size = cfg["dataset"]["image_size"]
-    arms = ["clean"] + [s for s in schemes] + [f"null[{s}]" for s in schemes]
+    # H3 (the leakage diagnostic) compares baseline AUC across splits, which
+    # needs only the clean arm - 1 detection per image instead of 5. Paying
+    # for watermark and null arms on the train split would cost 5x for data
+    # that hypothesis never reads.
+    if args.clean_only:
+        schemes = []
+        arms = ["clean"]
+    else:
+        arms = ["clean"] + [s for s in schemes] + [f"null[{s}]" for s in schemes]
 
     # Namespace shards by detector set. Without this, a later run adding a
     # second detector would find chunk_00001.json already on disk, skip it as
     # "done", and silently never score the new detector - resume turning into
     # data loss. The tag makes "done" mean "done FOR THIS detector set".
-    det_tag = "+".join(sorted(detectors))
+    det_tag = "+".join(sorted(detectors)) + ("-cleanonly" if args.clean_only else "")
     out_dir = Path(args.out_dir) / split / det_tag
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -217,6 +225,8 @@ def main() -> int:
     parser.add_argument("--num-shards", type=int, default=1)
     parser.add_argument("--torch-threads", type=int, default=None,
                          help="set to 1 when running several shards in parallel, so they do not oversubscribe cores")
+    parser.add_argument("--clean-only", action="store_true",
+                         help="score only the clean arm (H3 leakage diagnostic needs nothing else)")
     parser.add_argument("--local-dir", default=None,
                          help="read a materialised split from disk (scripts/materialize_split.py). "
                               "Required when running parallel shards - see iter_hf_split docstring.")
