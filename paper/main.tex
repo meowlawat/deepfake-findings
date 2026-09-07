@@ -45,8 +45,47 @@ question, and decline to answer it rather than answering it degenerately.
 \end{abstract}
 
 \section{Introduction}
-\TODO{Do not write before Experiment E1 clears the go/no-go gate
-(docs/03-experiment-plan.md \S2).}
+
+Two defences against synthetic media are converging in deployment. Proactive
+provenance marking embeds a signal at creation time so origin can be verified
+later; passive detection infers manipulation from residual synthesis
+artefacts. Systems increasingly run both, and the natural assumption is that
+the two supply independent evidence.
+
+They are not independent, because they are computed from the same pixels.
+Wu et al.~\cite{wu2024watermarksbugs} report that watermarking models built
+for genuine images can \emph{harm} a deployed detector, on the argument that
+watermark signals overlap the forgery signals detection relies on; the same
+pathology is reported independently in audio~\cite{muller2026watermarkshortcut}.
+If that holds generally, it matters well beyond accuracy: a detector whose
+score distribution shifts on marked media invalidates any decision threshold
+calibrated on unmarked media, which is precisely the traffic a provenance
+system exists to protect.
+
+That argument has a confound, and it is load-bearing. A detector trained on
+clean images will respond to \emph{any} imperceptible perturbation. Observing
+degradation after marking therefore does not establish that anything about the
+watermark's structure is responsible --- generic fragility predicts the same
+observation. No prior work in this space separates the two.
+
+We do, with a payload-free perturbation matched per image to the watermark's
+own PSNR, and we report every interference quantity net of that arm. We also
+fix the decision rule in advance: a detector-floor precondition, a gate
+threshold, and the framing to adopt if the gate returns a null are all
+committed before scoring.
+
+The gate returned a null. Net of the control, we do not detect
+watermark-specific interference in detector ranking, and we report the effect
+sizes our intervals exclude rather than asserting absence. We take some care
+to say what that does and does not license: our detectors are zero-shot and
+our corpus is whole-image synthesis marked after the fact, which differs from
+Wu et al.'s setting in the two respects most likely to matter, so the result
+reads as a boundary condition rather than a contradiction.
+
+Along the way the precondition earned its keep. One candidate detector,
+advertising $98.70\%$ accuracy on its model card, operates at chance on our
+evaluation distribution. Without a floor check its four interference rows
+would have entered the results indistinguishable from measurements.
 
 \TODO{The contribution list below is the one planned BEFORE data. E1's
 pre-registered gate returned a null (docs/06-results.md), so items 2--4 are
