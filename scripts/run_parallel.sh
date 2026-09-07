@@ -22,8 +22,9 @@ echo "launching $K shards on split=$SPLIT detectors=$DETECTORS"
 for i in $(seq 0 $((K-1))); do
   OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 nohup python3 scripts/e1_large.py \
     --splits "$SPLIT" \
+    --local-dir data/corpus \
     --chunk-size 100 \
-    --workers 1 \
+    --workers 0 \
     --torch-threads 1 \
     --detectors $DETECTORS \
     --shard "$i" --num-shards "$K" \

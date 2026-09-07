@@ -67,7 +67,14 @@ def _embed_one(payload):
 
 
 def iter_hf_split(split: str, limit: int | None, image_size: int):
-    """Stream the HF corpus rather than materialising 4GB of PNGs on disk."""
+    """Stream the HF corpus directly.
+
+    Only appropriate for a SINGLE process. Parallel shards must not each call
+    this: measured, four shards streaming the same split independently
+    produced zero completed chunks in nine minutes with the dataset cache
+    still empty, because each was re-downloading the same parquet files.
+    Use scripts/materialize_split.py once, then iter_local_split.
+    """
     import cv2
     from datasets import load_dataset
 
@@ -79,6 +86,36 @@ def iter_hf_split(split: str, limit: int | None, image_size: int):
         if img.shape[0] != image_size or img.shape[1] != image_size:
             img = cv2.resize(img, (image_size, image_size), interpolation=cv2.INTER_AREA)
         yield i, img, int(ex["label"])
+
+
+def iter_local_split(local_dir: Path, split: str, limit: int | None, image_size: int):
+    """Read a materialised split from disk. Ordering is deterministic (sorted
+    by filename, interleaved across classes) so every shard agrees on which
+    image carries which index, and so a resumed run reproduces the same
+    chunk boundaries as the run it is continuing.
+    """
+    import cv2
+
+    root = Path(local_dir) / split
+    by_label = []
+    for label, sub in ((0, "real"), (1, "fake")):
+        by_label.append([(p, label) for p in sorted((root / sub).glob("*.png"))])
+
+    ordered = []
+    for pair in zip(*by_label):          # interleave so any prefix stays balanced
+        ordered.extend(pair)
+    for lst in by_label:                  # append any class remainder
+        ordered.extend(lst[len(ordered) // 2:])
+
+    for i, (path, label) in enumerate(ordered):
+        if limit is not None and i >= limit:
+            break
+        bgr = cv2.imread(str(path))
+        if bgr is None:
+            continue
+        if bgr.shape[0] != image_size or bgr.shape[1] != image_size:
+            bgr = cv2.resize(bgr, (image_size, image_size), interpolation=cv2.INTER_AREA)
+        yield i, cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB), label
 
 
 def run_split(split: str, cfg, args, detectors) -> int:
@@ -100,11 +137,16 @@ def run_split(split: str, cfg, args, detectors) -> int:
     if done_chunks:
         print(f"[{split}] resuming; {len(done_chunks)} chunk(s) already on disk", flush=True)
 
-    stream = iter_hf_split(split, args.limit, image_size)
+    stream = (iter_local_split(Path(args.local_dir), split, args.limit, image_size)
+              if args.local_dir else iter_hf_split(split, args.limit, image_size))
     chunk, chunk_id, n_written = [], 0, 0
     t0 = time.time()
 
-    pool = ProcessPoolExecutor(max_workers=args.workers)
+    # workers=0 means embed inline in this process. When shards ARE the
+    # parallelism (scripts/run_parallel.sh), an inner pool per shard
+    # oversubscribes the box: 4 shards x (1 main + 1 worker) = 8 processes on
+    # 4 cores, measured at load average 8.5 and thrashing. Inline keeps it 1:1.
+    pool = ProcessPoolExecutor(max_workers=args.workers) if args.workers > 0 else None
     try:
         while True:
             chunk = []
@@ -127,7 +169,8 @@ def run_split(split: str, cfg, args, detectors) -> int:
 
             jobs = [(idx, img, label, schemes, payload_bits, args.seed + idx, tol_db)
                     for idx, img, label in chunk]
-            embedded = list(pool.map(_embed_one, jobs, chunksize=4))
+            embedded = (list(pool.map(_embed_one, jobs, chunksize=4)) if pool
+                         else [_embed_one(j) for j in jobs])
             embedded.sort(key=lambda r: r[0])
 
             records = []
@@ -151,7 +194,8 @@ def run_split(split: str, cfg, args, detectors) -> int:
                   f"{rate:.2f} img/s  ({len(records)} records)", flush=True)
             chunk_id += 1
     finally:
-        pool.shutdown(wait=True)
+        if pool:
+            pool.shutdown(wait=True)
 
     return n_written
 
@@ -173,6 +217,9 @@ def main() -> int:
     parser.add_argument("--num-shards", type=int, default=1)
     parser.add_argument("--torch-threads", type=int, default=None,
                          help="set to 1 when running several shards in parallel, so they do not oversubscribe cores")
+    parser.add_argument("--local-dir", default=None,
+                         help="read a materialised split from disk (scripts/materialize_split.py). "
+                              "Required when running parallel shards - see iter_hf_split docstring.")
     parser.add_argument("--out-dir", default="results/large")
     args = parser.parse_args()
 
