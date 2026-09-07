@@ -297,8 +297,52 @@ weakness in symmetric-key provenance, but its perceptual-hash commitment
 exhibits a $7\%$ false-negative rate on real photographs, so it is presented
 as a design correction rather than a deployment-ready mechanism.
 
+\section{Discussion}
+
+\paragraph{What a null here does and does not mean.} We set out to measure an
+effect reported in the literature and did not detect it in our setting. That
+is not a refutation of~\cite{wu2024watermarksbugs}. Their setting differs in
+the two respects most likely to matter: their detectors are trained for the
+manipulation family they evaluate, and their forged images are manipulated
+\emph{after} marking, so watermark and forgery signals coexist in the way the
+overlap argument describes. Ours are zero-shot detectors on whole-image
+synthesis marked after the fact. The useful reading is therefore a boundary
+condition --- interference is not a universal property of marking a detector's
+input --- and the boundary is exactly where future work should push.
+
+\paragraph{Ranking versus calibration.} $\Delta\mathrm{AUC}$ answers whether
+marking reorders a detector's scores. It is silent on whether marking
+\emph{translates} them, and a translation leaves ranking untouched while
+invalidating any posterior calibrated on unmarked media. A study gating on
+ranking alone can therefore return a null while a calibration-relevant effect
+is present. We flag this asymmetry because our own pre-registered gate has it:
+the gate tests $\Delta\mathrm{AUC}_{net}$, and the quantity a
+calibration-centred thesis needs is $\Delta\mu_{net}$. We report both, and we
+are explicit that any reading of the latter is post-hoc with respect to the
+gate --- retargeting a gate after seeing data is how a null becomes a false
+positive. The correct response is a fresh pre-registration on
+$\Delta\mu_{net}$, not a reinterpretation of this one.
+
+\paragraph{Detector floors deserve to be standard.} A precondition check cost
+almost nothing and caught a checkpoint operating at chance while advertising
+$98.70\%$. Any study measuring a \emph{difference} in detector behaviour
+inherits the assumption that the detector behaves at all, and that assumption
+is worth one line of code and one row in a table.
+
 \section{Conclusion}
-\TODO{Write last.}
+
+We measured watermark--detector interference against a PSNR-matched
+payload-free control and under a gate fixed before the data was scored, and
+found no watermark-specific effect on detector ranking in our setting.
+Reported intervals, not point estimates, bound what this excludes. Two
+by-products are of independent use: a control arm that separates structured
+interference from generic perturbation sensitivity, which prior work in this
+space does not apply; and evidence that a widely-used zero-shot detector's
+advertised accuracy can collapse to chance off its training distribution. The
+fusion half of the framework remains untested here, for a reason internal to
+the corpus rather than the method: with no manipulation step after embedding,
+the provenance channel carries no information, and no amount of fusion
+machinery can extract signal that is not there.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
