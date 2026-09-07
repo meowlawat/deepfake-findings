@@ -69,12 +69,18 @@ def leakage_diagnostic(e0: list[dict]) -> list[dict]:
     out = []
     for detector in sorted({r["detector"] for r in e0}):
         byspl = {r["split"]: r["baseline_auc"] for r in e0 if r["detector"] == detector}
-        train, test = byspl.get("train"), byspl.get("test")
+        train = byspl.get("train")
+        # test is the pre-registered comparator (docs/07 H3); validation is an
+        # equally valid held-out fallback and is reported as such rather than
+        # silently substituted, since the registered wording says train-test.
+        held_out_name = "test" if byspl.get("test") is not None else "validation"
+        test = byspl.get(held_out_name)
         if train is None or test is None:
             continue
         gap = train - test
         out.append({
-            "detector": detector, "auc_train": train, "auc_test": test, "gap": gap,
+            "detector": detector, "auc_train": train, "auc_held_out": test,
+            "held_out_split": held_out_name, "gap": gap,
             "reading": ("gap is large - consistent with the detector having seen the "
                          "train split during fine-tuning; treat absolute accuracies as "
                          "contaminated and rely on within-model deltas"
@@ -143,7 +149,8 @@ def main() -> int:
     if leak:
         print("\n=== Leakage diagnostic (train - test baseline AUC) ===")
         for r in leak:
-            print(f"  {r['detector']:9s} train={r['auc_train']:.4f} test={r['auc_test']:.4f} "
+            print(f"  {r['detector']:9s} train={r['auc_train']:.4f} "
+                  f"{r['held_out_split']}={r['auc_held_out']:.4f} "
                   f"gap={r['gap']:+.4f}")
             print(f"    -> {r['reading']}")
 
