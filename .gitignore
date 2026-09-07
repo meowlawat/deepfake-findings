@@ -10,9 +10,16 @@ __pycache__/
 .pytest_cache/
 .venv/
 data/
-results/
 *.egg-info/
 .DS_Store
 
 # Reference PDFs kept locally only — do not redistribute from a public repo
 lit/*.pdf
+
+# results/ is deliberately NOT ignored. The raw per-image detector scores are
+# 21MB total and they are the evidence behind every number in the paper - the
+# repository's own rule is that no number enters the paper unless code here
+# produced it, which is unverifiable if the scores live only on an ephemeral
+# disk. A container restart during this work made that risk concrete.
+# data/ stays ignored: 60k PNGs is corpus, regenerable via
+# scripts/materialize_split.py.

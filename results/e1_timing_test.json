@@ -1,0 +1,50 @@
+{
+  "rows": [
+    {
+      "detector": "vit",
+      "scheme": "dwtDctSvd",
+      "delta_mu": -0.10205814321525394,
+      "delta_sigma": 0.9691836675685319,
+      "delta_auc": NaN,
+      "delta_auc_null": NaN,
+      "delta_auc_net": NaN,
+      "n_clean": 20,
+      "n_scheme": 20
+    },
+    {
+      "detector": "vit",
+      "scheme": "rivaGan",
+      "delta_mu": -0.11930286814458668,
+      "delta_sigma": 0.9661153557732197,
+      "delta_auc": NaN,
+      "delta_auc_null": NaN,
+      "delta_auc_net": NaN,
+      "n_clean": 20,
+      "n_scheme": 20
+    },
+    {
+      "detector": "effnet",
+      "scheme": "dwtDctSvd",
+      "delta_mu": 0.20852060765027997,
+      "delta_sigma": 1.0054704766598073,
+      "delta_auc": NaN,
+      "delta_auc_null": NaN,
+      "delta_auc_net": NaN,
+      "n_clean": 20,
+      "n_scheme": 20
+    },
+    {
+      "detector": "effnet",
+      "scheme": "rivaGan",
+      "delta_mu": 0.6050427518785,
+      "delta_sigma": 1.016661275771618,
+      "delta_auc": NaN,
+      "delta_auc_null": NaN,
+      "delta_auc_net": NaN,
+      "n_clean": 20,
+      "n_scheme": 20
+    }
+  ],
+  "gate_passed": false,
+  "gate_message": "no valid Delta_AUC_net values computed - check detector floor (E0) first"
+}
