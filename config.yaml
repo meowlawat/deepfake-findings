@@ -24,6 +24,9 @@ watermark:
 detectors:
   vit: "Wvolf/ViT_Deepfake_Detection"
   effnet: "Skullly/DeepFake-EN-B6"
+  # Detector with fully disclosed provenance, trained by
+  # scripts/train_own_detector.py on the corpus train split.
+  own: "own:models/own_detector.json"
   floor_auc: 0.80          # docs/03 E0
   leakage_suspicion_auc: 0.97   # docs/04 R14 - report, don't silently celebrate
 

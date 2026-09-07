@@ -243,7 +243,13 @@ def main() -> int:
     det_cfg = {k: v for k, v in cfg["detectors"].items() if isinstance(v, str)}
     if args.detectors:
         det_cfg = {k: v for k, v in det_cfg.items() if k in args.detectors}
-    detectors = {name: Detector(model_id) for name, model_id in det_cfg.items()}
+    detectors = {}
+    for name, model_id in det_cfg.items():
+        if model_id.startswith("own:"):
+            from deepfake_interference.detectors import OwnDetector
+            detectors[name] = OwnDetector(model_id[len("own:"):])
+        else:
+            detectors[name] = Detector(model_id)
 
     for name, det in detectors.items():
         det._load()

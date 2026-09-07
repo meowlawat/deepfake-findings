@@ -119,6 +119,73 @@ class Detector:
         return out
 
 
+class OwnDetector:
+    """The detector we trained ourselves - docs/04 R14's actual fix.
+
+    Frozen ImageNet ResNet-18 backbone plus a logistic head fitted on the
+    corpus's train split by scripts/train_own_detector.py. Exposes the same
+    `.score`/`.score_batch` interface as `Detector`, so every analysis path
+    treats it identically.
+
+    Its value is not accuracy - a linear probe on generic features is a weak
+    detector - but provenance. The backbone's pretraining is ImageNet
+    classification, containing no deepfake corpus; the head saw only `train`.
+    So a baseline AUC on validation or test is honest by construction, and if
+    the attenuation effect reproduces on BOTH this and a strong purpose-built
+    CNN, it is a property of the detection problem rather than of one
+    undisclosed checkpoint.
+    """
+
+    def __init__(self, model_path: str = "models/own_detector.json", device: str | None = None):
+        import json
+        from pathlib import Path
+
+        spec = json.loads(Path(model_path).read_text())
+        self.coef = np.asarray(spec["coef"], dtype=np.float32)
+        self.intercept = float(spec["intercept"])
+        self.backbone_id = spec["backbone"].split(" ")[0]
+        self.model_id = f"own:{self.backbone_id}"
+        self._device = device
+        self._model = None
+
+    def _load(self):
+        if self._model is not None:
+            return
+        import torch
+        from transformers import AutoImageProcessor, AutoModel
+
+        if self._device is None:
+            self._device = "cuda" if torch.cuda.is_available() else "cpu"
+        self._processor = AutoImageProcessor.from_pretrained(self.backbone_id)
+        self._model = AutoModel.from_pretrained(self.backbone_id)
+        self._model.eval().to(self._device)
+        self._torch = torch
+
+    def default_batch_size(self) -> int:
+        self._load()
+        return 32 if self._device == "cuda" else 16
+
+    def score_batch(self, images: list[np.ndarray], batch_size: int | None = None) -> list[DetectorResult]:
+        self._load()
+        if batch_size is None:
+            batch_size = self.default_batch_size()
+        out: list[DetectorResult] = []
+        for start in range(0, len(images), batch_size):
+            chunk = [Image.fromarray(img) for img in images[start:start + batch_size]]
+            inputs = self._processor(images=chunk, return_tensors="pt")
+            inputs = {k: v.to(self._device) for k, v in inputs.items()}
+            with self._torch.no_grad():
+                pooled = self._model(**inputs).pooler_output
+            feats = pooled.reshape(pooled.shape[0], -1).cpu().numpy()
+            logits = feats @ self.coef + self.intercept   # log-odds of "fake"
+            for v in logits:
+                out.append(DetectorResult(v=float(v), logit_fake=float(v) / 2, logit_real=-float(v) / 2))
+        return out
+
+    def score(self, image: np.ndarray) -> DetectorResult:
+        return self.score_batch([image])[0]
+
+
 class DummyDetector:
     """Deterministic, dependency-free stand-in used only in tests/smoke runs
     where no network or model download is available. Never used for anything
