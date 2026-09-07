@@ -488,3 +488,63 @@ reliably move the decisions those probabilities drive.
 
 The paper must say exactly that, and must not claim a decision-level harm the
 data does not show.
+
+## Blocker 2 addressed: robust watermarks cannot see localized manipulation
+
+The fusion half was untestable because the corpus watermarked images that
+were already fake. `src/deepfake_interference/manipulation.py` adds the
+missing step `D` in the correct order — watermark an authentic image, *then*
+tamper with it — using a Poisson-blended elliptical region splice
+(`cv2.seamlessClone`), which is what a face swap does geometrically without
+needing a generative model.
+
+**The provenance channel still carries no signal, and now we know why.**
+Bit error rate of the recovered payload against manipulated area:
+
+| Area manipulated | dwtDctSvd BER | rivaGan BER |
+| --- | --- | --- |
+| 10% | **0.0000** | 0.0052 |
+| 25% | **0.0000** | 0.0104 |
+| 40% | 0.0026 | 0.0156 |
+| 60% | 0.0443 | 0.0521 |
+| 80% | 0.1953 | 0.1224 |
+| 95% | 0.2630 | 0.1615 |
+
+(BER 0.5 = payload destroyed; 0.0 = perfectly recovered. Authentic
+unmanipulated baseline is 0.0000.)
+
+At face-swap-scale coverage — 10–25% of image area, which is roughly what
+replacing a face costs — **the payload is recovered perfectly.** The
+manipulated image is indistinguishable from the untampered one on the
+provenance channel. Even obliterating 95% of the image leaves BER at 0.26,
+nowhere near destruction.
+
+**This is not a limitation of our corpus; it is a property of robust
+watermarking, and it refutes the design this project started from.** The
+source material's Phase 3 Step 1 asks "Is the watermark present? Has it been
+altered?" and routes the answer into deepfake detection. For a robust scheme
+that question is answerable only for global, near-total degradation. The
+robustness that lets a mark survive JPEG, resize and re-encode is *the same
+property* that makes it survive having a face replaced — redundant embedding
+across the whole image means destroying a fifth of it costs nothing.
+
+Two consequences for the paper:
+
+1. **The fusion half cannot be rescued by a better corpus.** We built the
+   manipulation step specifically to rescue it, and measured that it does not.
+   A provenance channel built on a robust watermark contributes no information
+   about localized tampering, so any `F0`–`F5` comparison over it is fusing
+   one informative source with a constant. This is now a measured claim rather
+   than a suspicion.
+2. **It explains why the semi-fragile and localization-capable schemes in the
+   related work exist at all** (EditGuard, SepMark and the separable-decoder
+   family). They are not incremental refinements of robust watermarking; they
+   are a response to exactly this failure. A robust mark answers "where did
+   this come from"; it cannot answer "was this edited". Our measurement puts a
+   number on the gap.
+
+The honest framing for the paper is therefore that we set out to test
+interference in a fusion of provenance and passive evidence, and found the
+provenance half inert for the threat it is deployed against — with the
+crossover measured at roughly 40–60% manipulated area, far outside any
+realistic face manipulation.
