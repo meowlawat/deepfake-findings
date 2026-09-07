@@ -39,9 +39,9 @@ Verified by actually running it, not by plan:
   0.01/0.95 example from their respective cost assumptions.
 - **E1 gate** (`scripts/e1_interference.py`): runs end-to-end (data load ->
   embed both schemes + null arm -> score with both detectors -> interference
-  table -> gate verdict -> JSON). Smoke-tested on a tiny synthetic dataset in
-  this session; **not yet run on the real dataset**, which requires the
-  Kaggle account that lives on the local machine, not this environment.
+  table -> gate verdict -> JSON). **Run on the real dataset, n=300.** The
+  pre-registered gate FAILED; see `docs/06-results.md` for the numbers and
+  what they do and do not license.
 
 - **Dataset** (`scripts/fetch_dataset.py`): the Kaggle account turned out to
   be unnecessary. `TheKernel01/140k-Real-and-Fake-Faces` on the HF Hub
@@ -65,10 +65,10 @@ Verified by actually running it, not by plan:
 
 ```bash
 pip install -r requirements.txt
-PYTHONPATH=src python3 -m pytest tests/ -q          # 27 tests, ~5s, no GPU/network needed
+PYTHONPATH=src python3 -m pytest tests/ -q          # 35 tests, ~17s, no GPU/network needed
 
 python3 scripts/00_verify_tooling.py                 # confirms the environment can run everything above
-# place the Kaggle dataset (docs/03 S0) as data/raw/{real,fake}/*.jpg, then:
+python3 scripts/fetch_dataset.py --n-per-class 150   # HF mirror; no Kaggle account needed
 python3 scripts/e1_interference.py --config config.yaml --limit 50   # fast dry run
 python3 scripts/e1_interference.py --config config.yaml              # full E1 gate
 ```
