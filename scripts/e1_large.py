@@ -111,7 +111,12 @@ def run_split(split: str, cfg, args, detectors) -> int:
             if not chunk:
                 break
 
-            if chunk_id in done_chunks:
+            # Data-parallel sharding: each process takes every Kth chunk.
+            # Composes with resume-by-existence for free, since both are just
+            # "skip this chunk_id". On a CPU box this is the difference
+            # between one process leaving 3 cores idle during detection and
+            # K processes saturating all of them.
+            if (chunk_id % args.num_shards) != args.shard or chunk_id in done_chunks:
                 chunk_id += 1
                 continue
 
@@ -159,8 +164,16 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--detectors", nargs="*", default=None,
                          help="detector keys from config; default all that config lists")
+    parser.add_argument("--shard", type=int, default=0, help="this process handles chunks where id %% num_shards == shard")
+    parser.add_argument("--num-shards", type=int, default=1)
+    parser.add_argument("--torch-threads", type=int, default=None,
+                         help="set to 1 when running several shards in parallel, so they do not oversubscribe cores")
     parser.add_argument("--out-dir", default="results/large")
     args = parser.parse_args()
+
+    if args.torch_threads:
+        import torch
+        torch.set_num_threads(args.torch_threads)
 
     from deepfake_interference.detectors import Detector
 
@@ -175,7 +188,8 @@ def main() -> int:
         print(f"detector {name}: {det.model_id} on {det._device} "
               f"(batch default {det.default_batch_size()})", flush=True)
 
-    print(f"workers={args.workers} chunk_size={args.chunk_size} splits={args.splits}", flush=True)
+    print(f"workers={args.workers} chunk_size={args.chunk_size} splits={args.splits} "
+          f"shard={args.shard}/{args.num_shards}", flush=True)
 
     total = 0
     for split in args.splits:
