@@ -198,3 +198,45 @@ not a bug. But it means v1 cannot substantiate the fusion half of the
 contribution, only the interference-measurement half — and the paper must
 say so plainly rather than presenting F0–F5 comparisons as though the
 provenance channel were doing work.
+
+## Detector screening: five of six community detectors are at chance
+
+`scripts/screen_detectors.py`, n = 300, baseline AUC on unwatermarked images
+(`W = 0`). All six are public Hugging Face checkpoints returned by searching
+the hub for deepfake image classifiers.
+
+| Model | Baseline AUC | Verdict |
+| --- | --- | --- |
+| `Skullly/DeepFake-EN-B6` | **0.8952** | passes the 0.80 floor |
+| `Wvolf/ViT_Deepfake_Detection` | 0.5365 | chance — card advertises 98.70% accuracy |
+| `DaMsTaR/Detecto-DeepFake_Image_Detector` | 0.5365 | chance |
+| `prithivMLmods/Deep-Fake-Detector-v2-Model` | 0.5299 | chance |
+| `dima806/deepfake_vs_real_image_detection` | 0.5296 | chance |
+| `Hemg/Deepfake-Detection` | 0.4576 | **below** chance |
+
+This was run to widen the evidential base for E1's null, which rests on a
+single detector. **It failed at that, and the failure is itself the more
+interesting result.** Only one of six publicly available deepfake detectors
+discriminates at all on whole-image StyleGAN synthesis versus real FFHQ
+photographs — a task that is, if anything, *easier* than the face-swap
+detection these models are nominally for.
+
+Two things to check before this is written up:
+
+1. **`Wvolf` and `DaMsTaR` report AUC identical to four decimal places
+   (0.5365).** That is not plausibly coincidence across 300 images; the
+   likeliest explanation is that one is a re-upload of the other's weights.
+   Verify by comparing per-image scores — if they match elementwise, the
+   "six independent detectors" framing is wrong and it is really five, which
+   must be stated.
+2. `Hemg` scoring *below* 0.5 means its labelling is likely inverted relative
+   to its `id2label`, not that it is worse than guessing. Either way it does
+   not clear the floor, but the paper should not imply anti-predictive skill
+   where the real story is a label convention.
+
+**Consequence for E1, stated plainly:** the plan to strengthen the null by
+measuring it across several independent detectors is not achievable with
+publicly available checkpoints. The null rests on one detector, and no amount
+of further screening fixes that — it is a property of what exists, not of
+effort. This belongs in Limitations as a hard constraint rather than as
+future work.
