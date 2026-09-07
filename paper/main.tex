@@ -183,9 +183,54 @@ pre-registered on $\Delta$AUC$_{net}$.}
 \TODO{Table T4.}
 
 \section{Limitations}
-\TODO{State plainly: face-centric data; a fixed detector set; costs are assumed
-rather than elicited from a deployment; the fraction $\rho$ of watermarked media
-in the wild is unknown and swept rather than measured.}
+
+These are stated here rather than distributed through the results, because
+several of them bound what the results can mean at all.
+
+\paragraph{The provenance channel is non-informative by construction.}
+Our corpus supplies images that are \emph{already} real or synthetic, so the
+watermark is embedded after the synthetic image exists and survives equally on
+both classes. Deployment has the opposite ordering: the authentic original is
+marked, and a manipulation then damages the mark, which is what makes bit error
+rate informative about provenance. Formally, the manipulation step $D$ in
+$V=f_\theta(T(D(\tilde{x})))$ is absent from our pipeline. Applying a real
+face-swap to watermarked images requires a generative model that our
+zero-training constraint excludes. Consequently this work substantiates the
+\emph{interference-measurement} half of the framework and not the
+\emph{fusion} half: any $F_0$--$F_5$ comparison here fuses one informative
+signal with one uninformative one, which is a degenerate case of the method.
+
+\paragraph{Statistical power.} At $n{=}300$ the standard error on a single AUC
+is roughly $0.03$, larger than the net effects measured. Our null is therefore
+``no effect detectable at this sample size'', and the reported intervals ---
+not the point estimates --- are what bound the effect sizes actually excluded.
+
+\paragraph{Synthesis type.} The corpus is whole-image GAN synthesis versus real
+photographs, not face-swap or reenactment manipulation. Detectors keying on
+generator fingerprints need not behave the same way on manipulations that leave
+different traces, so these results should not be read as covering
+``deepfakes'' in the face-swap sense.
+
+\paragraph{Detector provenance.} Both detectors are third-party checkpoints
+whose training data is undisclosed, so contamination with our evaluation
+distribution cannot be excluded. We mitigate by reporting only within-model,
+within-image deltas, where common-mode memorisation cancels to first order;
+absolute accuracies are context, never claims.
+
+\paragraph{Zero-shot setting.} Interference is measured against detectors used
+as shipped. Whether the same effect holds for a detector trained for this task
+and distribution is untested here.
+
+\paragraph{Cost model and $\rho$.} Decision thresholds derive from an assumed
+cost triple rather than one elicited from a deployment, and the real-world
+watermarked fraction $\rho$ is unknown and swept rather than measured. We
+therefore report realised coverage beside every cost model, since a band that
+is optimal on paper can route most traffic to human review.
+
+\paragraph{Cryptographic binding.} The Ed25519 construction corrects a real
+weakness in symmetric-key provenance, but its perceptual-hash commitment
+exhibits a $7\%$ false-negative rate on real photographs, so it is presented
+as a design correction rather than a deployment-ready mechanism.
 
 \section{Conclusion}
 \TODO{Write last.}
