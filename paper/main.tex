@@ -27,21 +27,32 @@ imperceptible perturbation shifts a detector trained on clean images, so
 degradation after marking need not be watermark-specific. We re-measure the
 effect against a control the prior literature does not apply --- a
 payload-free perturbation matched per image to the watermark's own PSNR ---
-and under a decision gate, threshold, and fallback framing all fixed before
-the data was scored. Across two watermark schemes spanning the
-hand-crafted/learned divide and two detector families, \emph{we do not detect
-watermark-specific interference in detector ranking}: net of the control,
-$\Delta\mathrm{AUC}$ is \TODO{report with CIs}, and we report what effect
-sizes these intervals exclude rather than claiming absence. Two findings are
-of independent use. First, the control arm itself: without it, raw degradation
-is not attributable to the watermark. Second, a detector-floor precondition
-caught a widely-downloaded checkpoint advertising $98.70\%$ accuracy operating
-at $\mathrm{AUC}{=}0.54$ --- chance --- on a synthesis distribution it was not
-tuned for, which would otherwise have contributed an entire table of confident
-noise. We separately show why our corpus cannot settle the downstream fusion
-question, and decline to answer it rather than answering it degenerately.
-\TODO{Finalise numbers once results/e1\_bootstrap.json is in; keep the
-"we do not detect" framing, never "there is no".}
+and under hypotheses, thresholds and a fallback framing all fixed before the
+data was scored. On $20{,}000$ held-out images we find the opposite of the
+expected result: \textbf{watermarking does not measurably degrade the
+detector, while an equally imperceptible random perturbation does.} Fitting
+each perturbed score against its clean counterpart, matched-PSNR noise
+attenuates the detector's log-odds evidence toward zero by $\approx 16\%$
+(slope $0.83$--$0.85$, intercept $\approx 0$), whereas watermarking leaves it
+essentially intact (slope $0.97$--$0.99$). The attenuation is concentrated on
+manipulated images, eroding the evidence that something is fake about three
+times more than the evidence that something is real.
+
+This effect is structurally invisible to the field's standard metric: with
+near-zero intercept the attenuation is a monotone rescaling, so AUC is
+unchanged --- exactly, not approximately. It is nonetheless the quantity that
+governs calibration, since shrinking log-odds changes the score-to-posterior
+mapping that any operating threshold depends on. We show that a mean-shift
+statistic, the natural first choice, cannot distinguish attenuation from
+translation and misdescribes the mechanism; a slope estimate can.
+
+Two further results are of independent use. The control arm itself: without a
+payload-free perturbation matched per image, raw degradation is not
+attributable to the watermark, and here it would have inverted the conclusion.
+And a detector-floor precondition caught five of six public checkpoints
+operating at chance --- one advertising $98.70\%$ accuracy scores
+$\mathrm{AUC}{=}0.54$ --- which would otherwise have contributed tables of
+confident noise.
 \end{abstract}
 
 \section{Introduction}
@@ -326,28 +337,68 @@ RivaGAN     & $\mathbf{+1.353}$ [$+1.317$, $+1.387$] & $-0.0051$ [$-0.0071$, $-0
 \end{tabular}
 \end{center}
 
-\textbf{H1 is supported for both schemes.} The location shift exceeds the
-pre-registered $0.10$-logit effect floor by roughly $8\times$ and $13\times$,
-in the predicted direction, with intervals excluding zero.
+Both pre-registered tests pass: $\Delta\mu_{net}$ excludes zero and exceeds
+the $0.10$-logit floor; $\Delta\mathrm{AUC}_{net}$ stays inside the
+$\pm 0.02$ band.
 
-\textbf{H2 holds, with a caveat we state rather than bury.} $\Delta\mathrm{AUC}_{net}$
-remains inside the $\pm 0.02$ band, but at this sample size its intervals
-exclude zero: a ranking effect of roughly $\pm 0.005$ AUC is real. It is also
-negligible, and the two schemes carry \emph{opposite signs}, so it has no
-consistent direction. This is the case the effect-size floor was written to
-handle --- at large $n$ an interval excludes zero for effects too small to
-move any decision, and reporting ``significant ranking interference'' from
-these numbers would be technically true and substantively false.
+\textbf{But $\Delta\mu_{net}$ is the wrong estimand, and reporting it alone
+would misdescribe the mechanism.} An audit decomposing it into its two halves
+shows the watermark contributes almost nothing for the hand-crafted scheme:
 
-The gap between the two columns is the result. A watermark moves the score
-distribution by about one logit while leaving the ordering essentially intact
---- two orders of magnitude separate the effects. Every accuracy-style metric
-reports business as usual, and every decision threshold calibrated on unmarked
-media is now applied to a distribution that has shifted beneath it.
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+Scheme & watermark $-$ clean & null $-$ clean & net \\
+\midrule
+DWT-DCT-SVD & $\mathbf{-0.009}$ & $-0.846$ & $+0.837$ \\
+RivaGAN & $+0.605$ & $-0.748$ & $+1.353$ \\
+\bottomrule
+\end{tabular}
+\end{center}
 
-This also reframes the earlier null rather than overturning it. That gate
-measured ranking, and ranking genuinely does not move; the effect it appeared
-to rule out was never a ranking effect.
+The entire net effect for DWT-DCT-SVD is the \emph{control} falling. Nor is
+the effect a location shift: it ranges from $-0.36$ to $+2.28$ across
+clean-score quintiles, where a translation would be flat. Regressing each
+arm on the clean score, $v_{\text{arm}} = a + b\,v_{\text{clean}}$:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+Arm & slope $b$ & intercept $a$ \\
+\midrule
+DWT-DCT-SVD & $0.968$ & $+0.125$ \\
+null (PSNR-matched) & $\mathbf{0.834}$ & $-0.158$ \\
+RivaGAN & $0.990$ & $+0.649$ \\
+null (PSNR-matched) & $\mathbf{0.850}$ & $-0.125$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{The mechanism is attenuation.} At matched imperceptibility
+($\approx 40$\,dB PSNR, $100\%$ of images within $0.5$\,dB of their scheme),
+random perturbation shrinks the detector's log-odds evidence toward zero by
+$\approx 16\%$ ($b \approx 0.84$, $a \approx 0$), while watermarking leaves it
+essentially intact ($b \approx 0.97$--$0.99$). $\Delta\mu$ cannot distinguish
+these: attenuating a distribution whose mean is not zero (here $+4.16$) lowers
+that mean, so a slope change is reported as a shift.
+
+Two consequences follow, and they are sharper than a location-shift story.
+First, \textbf{attenuation is invisible to AUC by construction} --- with
+$a \approx 0$ it is a monotone rescaling, and AUC is rank-based; we verify in
+a unit test that AUC is \emph{exactly} unchanged under pure attenuation. This
+is why our AUC gate returned a null while a real effect was present, and why
+any study gating on AUC alone cannot see this class of effect. Second,
+\textbf{attenuation is precisely what breaks calibration}: shrinking log-odds
+toward zero changes the score-to-posterior mapping, so a threshold calibrated
+on unperturbed media is applied to evidence that has been scaled down.
+
+Effect sizes, stated in standardised units rather than raw logits: against a
+clean-score standard deviation of $7.04$, the net effects are $0.12$--$0.19$
+sd, with paired per-image Cohen's $d_z$ of $0.38$ and $0.55$ --- moderate. The
+effect is also class-dependent, which a pooled figure hides: the null arm
+erodes evidence on manipulated images roughly three times more than on real
+ones ($-1.447$ vs $-0.246$ for DWT-DCT-SVD). Imperceptible noise
+preferentially destroys the evidence that something is fake.
 \subsection{It propagates into fusion (E2)}
 \TODO{Figure F1 --- reliability diagrams split by $W$. Money figure.}
 \subsection{Interference-aware fusion restores calibration (E3)}
