@@ -444,3 +444,47 @@ Noise erodes evidence on manipulated images ~3× more than on real ones
 (dwtDctSvd null: −1.447 on fakes vs −0.246 on reals). That asymmetry is the
 operationally important part: **imperceptible noise preferentially destroys
 the evidence that something is fake.**
+
+## Blocker 3 addressed: calibration measured, not argued — result is PARTIAL
+
+`scripts/calibration_effect.py`. Protocol fixed before running: split the
+20,000 scored validation images in half; fit a calibrator on the **clean arm
+of the calibration half only** (the deployment story — you calibrate once, on
+clean media); freeze it; apply to the eval half of every arm.
+
+| Arm | Platt ECE | Isotonic ECE | slope vs clean |
+| --- | --- | --- | --- |
+| clean | 0.1273 | **0.0094** | 1.000 |
+| dwtDctSvd | 0.1228 | 0.0154 | 0.968 |
+| rivaGan | 0.1353 | 0.0290 | 0.990 |
+| null[dwtDctSvd] | 0.0958 | **0.0492** | 0.834 |
+| null[rivaGan] | 0.1009 | **0.0456** | 0.850 |
+
+**The two calibrators disagree in sign on the null arms, and that must not be
+cherry-picked.** Under isotonic, attenuation degrades calibration by
++0.040/+0.036 — a 4–5× increase over the clean baseline of 0.0094, with
+watermarks degrading far less (+0.006, +0.020). Under Platt, the null arms
+*improve* by −0.032/−0.026.
+
+**Why Platt is uninformative here, stated rather than used to pick a winner.**
+Platt's ECE on the *clean* arm is 0.1273 — thirteen times isotonic's. A
+single logistic in the raw logit is badly misspecified for this detector
+(scores span −11.6 to +36.8 with sd 7.04 and strongly non-logistic class
+overlap), so the Platt baseline is already broken before any perturbation is
+applied. Attenuation happens to move scores in a direction that partially
+cancels that misspecification. A ΔECE measured against a broken baseline
+measures the baseline, not the perturbation.
+
+That the field's default calibrator is this badly misspecified on a
+real detector's logits is worth reporting in its own right.
+
+**Verdict on the claim.** Supported for calibration *quality*: with a
+well-specified calibrator, attenuation degrades ECE 4–5× while equally
+imperceptible watermarking degrades it far less. **Not supported for decision
+risk** under the cost model tested: isotonic DRD is 0.0055 (clean), 0.0145
+(null-dwt), 0.0054 (null-riva) — small and inconsistent in direction. The
+mechanism reaches the probability estimates but does not, at these costs,
+reliably move the decisions those probabilities drive.
+
+The paper must say exactly that, and must not claim a decision-level harm the
+data does not show.
