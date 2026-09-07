@@ -31,10 +31,13 @@ from deepfake_interference import metrics
 
 
 def load_records(in_dir: Path) -> list[dict]:
+    """Shards live at <in_dir>/<split>/<detector-set>/chunk_*.json. Globbing
+    recursively rather than assuming a fixed depth keeps this working whether
+    a run used one detector or several.
+    """
     records = []
-    for split_dir in sorted(p for p in in_dir.iterdir() if p.is_dir()):
-        for shard in sorted(split_dir.glob("chunk_*.json")):
-            records.extend(json.loads(shard.read_text())["records"])
+    for shard in sorted(Path(in_dir).rglob("chunk_*.json")):
+        records.extend(json.loads(shard.read_text())["records"])
     return records
 
 

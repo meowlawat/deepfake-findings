@@ -88,7 +88,12 @@ def run_split(split: str, cfg, args, detectors) -> int:
     image_size = cfg["dataset"]["image_size"]
     arms = ["clean"] + [s for s in schemes] + [f"null[{s}]" for s in schemes]
 
-    out_dir = Path(args.out_dir) / split
+    # Namespace shards by detector set. Without this, a later run adding a
+    # second detector would find chunk_00001.json already on disk, skip it as
+    # "done", and silently never score the new detector - resume turning into
+    # data loss. The tag makes "done" mean "done FOR THIS detector set".
+    det_tag = "+".join(sorted(detectors))
+    out_dir = Path(args.out_dir) / split / det_tag
     out_dir.mkdir(parents=True, exist_ok=True)
 
     done_chunks = {int(p.stem.split("_")[-1]) for p in out_dir.glob("chunk_*.json")}
