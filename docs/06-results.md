@@ -296,3 +296,43 @@ The earlier n=300 gate failure (`Δ_AUC_net` ≈ 0) was therefore **correct, not
 underpowered** — it was measuring ranking, and ranking genuinely does not
 move. The premise it appeared to refute was never a ranking claim; it was a
 calibration claim that the gate was not built to see.
+
+## H3 — leakage diagnostic, resolved
+
+Baseline AUC (`W = 0`), 20,000 images per split, `Skullly/DeepFake-EN-B6`:
+
+| Split | Baseline AUC |
+| --- | --- |
+| train | 0.8697 |
+| validation | 0.8733 |
+| test | 0.8699 |
+
+**train − test gap = −0.0002.** Essentially identical, and the sign is
+*negative* — the detector performs marginally worse on the split it would
+have been fine-tuned on, if it had been.
+
+**H3 verdict: no evidence of train-split contamination.** The gap is two
+orders of magnitude below the 0.05 threshold registered in `docs/07`. Stated
+with the caveat that was registered alongside it: this is evidence *against*
+contamination, not proof of its absence. A detector fine-tuned on a different
+corpus that merely overlaps this one would not show a train/test gap either.
+
+What it does settle is the specific worry in `docs/04` R14 — that
+`Skullly/DeepFake-EN-B6`'s undisclosed training data was *this corpus's train
+split*, inflating its 0.87 baseline. That hypothesis predicts a positive gap
+and we measure −0.0002.
+
+Note the flat profile across splits (0.8697 / 0.8733 / 0.8699) is itself a
+useful control: it shows the three splits are exchangeable with respect to
+this detector, which is what licenses treating validation as a clean
+confirmatory split for H1/H2.
+
+## Summary of the pre-registered tests
+
+| Hypothesis | Verdict | Evidence |
+| --- | --- | --- |
+| **H1** — `Δ_μ_net` ≠ 0, effect ≥ 0.10 logits | **SUPPORTED** | +0.837 [+0.807, +0.867] and +1.353 [+1.317, +1.387], n = 20,000 |
+| **H2** — `Δ_AUC_net` within ±0.02 | **HOLDS** | +0.0049 and −0.0051; inside the band, opposite signs, negligible magnitude |
+| **H3** — train − test baseline AUC gap | **no contamination detected** | −0.0002 against a 0.05 threshold |
+
+Scale: 60,000 images scored, 140,000 detector evaluations, all three splits.
