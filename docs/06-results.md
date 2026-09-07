@@ -548,3 +548,90 @@ interference in a fusion of provenance and passive evidence, and found the
 provenance half inert for the threat it is deployed against — with the
 crossover measured at roughly 40–60% manipulated area, far outside any
 realistic face manipulation.
+
+## Blocker 1 addressed: the attenuation asymmetry does NOT replicate
+
+`scripts/train_own_detector.py` produced the second detector — frozen
+ImageNet ResNet-18 (`microsoft/resnet-18`, `pooler_output`, 512-d) plus a
+`LogisticRegression` head fitted on the corpus *train* split only, in-sample
+accuracy 0.805. Its provenance is disclosed by construction (ImageNet
+pretraining contains no deepfake corpus; the head never saw validation or
+test), which is what `docs/04` R14 actually needed and what no amount of
+further screening of public checkpoints could supply.
+
+It was run over all five arms on 8,000 validation images.
+`scripts/replication_check.py` fits the same evidence-transfer regression
+`v_arm = a + b·v_clean` for both detectors **restricted to the identical
+8,000 images**, with 800-resample bootstrap CIs:
+
+| Detector | Scheme | watermark b [95% CI] | null b [95% CI] | null − wm |
+| --- | --- | --- | --- | --- |
+| effnet (B6) | dwtDctSvd | 0.9662 [0.9622, 0.9705] | **0.8323** [0.8247, 0.8393] | **−0.1339** |
+| effnet (B6) | rivaGan | 0.9874 [0.9829, 0.9924] | **0.8484** [0.8414, 0.8555] | **−0.1390** |
+| own (RN-18 probe) | dwtDctSvd | 0.9562 [0.9510, 0.9615] | 0.9706 [0.9666, 0.9744] | **+0.0144** |
+| own (RN-18 probe) | rivaGan | 0.9486 [0.9432, 0.9540] | 0.9758 [0.9719, 0.9789] | **+0.0272** |
+
+**The effect does not replicate, and its sign reverses.** On EfficientNet-B6
+the payload-free null perturbation attenuates detector evidence by ~16% while
+the watermark attenuates by ~1–3%. On the ResNet-18 probe the null attenuates
+by ~2–3% — *less* than the watermark. The CIs are tight and nowhere near
+overlapping in either direction.
+
+The obvious escape — "the probe is just too weak to show the effect" — is
+closed by the baseline AUCs on those same 8,000 images:
+
+| Detector | clean | dwtDctSvd | null[dwtDctSvd] | rivaGan | null[rivaGan] |
+| --- | --- | --- | --- | --- | --- |
+| effnet (B6) | 0.8703 | 0.8672 | 0.8629 | 0.8586 | 0.8644 |
+| own (RN-18 probe) | 0.8725 | 0.8641 | 0.8655 | 0.8598 | 0.8665 |
+
+The two detectors are equally discriminative here (0.8703 vs 0.8725) and
+their AUCs move nearly identically under every arm. What differs is *how
+the score distribution moves* — which is precisely the quantity AUC cannot
+see, and precisely what the regression was introduced to measure. A weak
+detector cannot explain a difference in a quantity on which the two
+detectors are matched.
+
+**Consequence: attenuation is a property of one checkpoint, not of
+detection.** EfficientNet-B6's sensitivity to PSNR-matched additive noise
+is a fact about that model — plausibly about training-time augmentation, or
+about a 528×528 processing resolution that resamples fine noise differently
+than the probe's 224×224 — and it cannot be asserted as a property of
+passive deepfake detection. This is the outcome
+`scripts/train_own_detector.py`'s own docstring committed to reporting
+either way, and it goes against the claim the paper was built around.
+
+### What survives, and what does not
+
+Does not survive as a general claim:
+
+- "Payload-free perturbation attenuates detector evidence while watermarking
+  does not." Checkpoint-specific. Stated as general in the abstract, intro
+  and contribution 2 of `paper/main.tex` before this measurement; corrected
+  there now.
+
+Survives, and is strengthened:
+
+- **The null-arm control is necessary.** This is now the paper's strongest
+  methodological point rather than a caveat. Δμ for dwtDctSvd on effnet is
+  −0.009 while its PSNR-matched null moves −0.846: a study without the
+  control arm would have reported the null's behaviour as the watermark's.
+  And a study with the control but only one detector would have reported a
+  checkpoint artifact as a property of detection. Both failures are cheap to
+  make and neither is visible in the headline metric.
+- **AUC is blind to monotone attenuation** (`b < 1` with `a ≈ 0` is rank-
+  preserving). Mathematical, not empirical: unaffected.
+- **Δμ conflates translation with attenuation**, so it is the wrong estimand
+  for this question. Mathematical: unaffected.
+- **Robust watermarks are blind to localized manipulation** (BER 0.0000 at
+  10–25% manipulated area). Scheme-level and architecture-independent — no
+  detector appears in that measurement at all.
+- **Five of six public detector checkpoints are at chance on this corpus**,
+  and the sixth has undisclosed training data. Unaffected.
+
+The paper's thesis is therefore no longer "watermarking is benign where
+noise is harmful". It is: *the interference question cannot be answered
+without a payload-free control arm and more than one detector, and when you
+supply both, the effect that motivated the question turns out to be
+checkpoint-specific while the provenance channel turns out to be inert for
+the threat it is deployed against.* That is a smaller claim and a true one.
