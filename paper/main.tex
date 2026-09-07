@@ -413,18 +413,20 @@ preferentially destroys the evidence that something is fake.
 These are stated here rather than distributed through the results, because
 several of them bound what the results can mean at all.
 
-\paragraph{The provenance channel is non-informative by construction.}
-Our corpus supplies images that are \emph{already} real or synthetic, so the
-watermark is embedded after the synthetic image exists and survives equally on
-both classes. Deployment has the opposite ordering: the authentic original is
-marked, and a manipulation then damages the mark, which is what makes bit error
-rate informative about provenance. Formally, the manipulation step $D$ in
-$V=f_\theta(T(D(\tilde{x})))$ is absent from our pipeline. Applying a real
-face-swap to watermarked images requires a generative model that our
-zero-training constraint excludes. Consequently this work substantiates the
-\emph{interference-measurement} half of the framework and not the
-\emph{fusion} half: any $F_0$--$F_5$ comparison here fuses one informative
-signal with one uninformative one, which is a degenerate case of the method.
+\paragraph{The provenance channel is inert, and we measured why.}
+An earlier draft listed this as a corpus artefact: our images are already real
+or synthetic, so the watermark is applied after the fact rather than before a
+manipulation, and the manipulation step $D$ in $V=f_\theta(T(D(\tilde{x})))$
+was simply absent. We then supplied $D$ --- a Poisson-blended elliptical
+region splice, which is what a face swap does geometrically --- in the correct
+order, and measured the result (\S\ref{sec:provenance-inert}). The channel is
+still inert, for a reason that is a property of robust watermarking rather
+than of our data, and that reason is a finding rather than a limitation.
+What remains a genuine limitation is that our splice is not a learned face
+swap: it is faithful to the provenance mechanics but not to the
+detector-facing realism of a state-of-the-art manipulation, so claims here
+concern how provenance evidence behaves under localised tampering, not the
+detectability of modern face swaps.
 
 \paragraph{Statistical power.} At $n{=}300$ the standard error on a single AUC
 is roughly $0.03$, larger than the net effects measured. Our null is therefore
@@ -457,6 +459,56 @@ is optimal on paper can route most traffic to human review.
 weakness in symmetric-key provenance, but its perceptual-hash commitment
 exhibits a $7\%$ false-negative rate on real photographs, so it is presented
 as a design correction rather than a deployment-ready mechanism.
+
+\subsection{Robust watermarks cannot see localised manipulation}
+\label{sec:provenance-inert}
+
+The framework this work set out to test routes a provenance question ---
+``is the watermark present, and has it been altered?'' --- into deepfake
+detection. We supplied the manipulation step that question presupposes,
+watermarking an authentic image and \emph{then} splicing an elliptical region
+of a donor image into it with Poisson blending, and measured the bit error
+rate of the recovered payload against the manipulated area.
+
+\begin{center}
+\begin{tabular}{rrr}
+\toprule
+Area manipulated & DWT-DCT-SVD BER & RivaGAN BER \\
+\midrule
+10\% & $\mathbf{0.0000}$ & $0.0052$ \\
+25\% & $\mathbf{0.0000}$ & $0.0104$ \\
+40\% & $0.0026$ & $0.0156$ \\
+60\% & $0.0443$ & $0.0521$ \\
+80\% & $0.1953$ & $0.1224$ \\
+95\% & $0.2630$ & $0.1615$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+BER $0.5$ means the payload is destroyed; $0.0$ means it is recovered
+perfectly, which is also the unmanipulated baseline. At the coverage a face
+replacement actually costs --- roughly $10$--$25\%$ of image area --- the
+payload survives \emph{intact}, and the tampered image is indistinguishable
+from an untouched one on the provenance channel. Obliterating $95\%$ of the
+image still leaves BER at $0.26$.
+
+This is not a shortcoming of our corpus. It is the defining property of a
+robust watermark: redundant embedding across the whole image is what lets a
+mark survive JPEG, resizing and re-encoding, and it is the same property that
+lets it survive having a face replaced. Robustness to benign channels and
+sensitivity to malicious edits are the same axis read in opposite directions,
+and a scheme cannot be strong on both.
+
+Two consequences follow. A fused decision rule over such a channel is fusing
+one informative signal with a constant, so the fusion comparison we set out to
+run is not merely underpowered here but ill-posed --- a claim we can now
+support with a measurement rather than a suspicion. And it explains why
+semi-fragile and localisation-capable schemes exist as a separate line of work
+rather than as refinements of robust watermarking: they are a response to
+exactly this failure. A robust mark answers where content came from; it cannot
+answer whether content was edited. Our measurement puts the crossover at
+roughly $40$--$60\%$ manipulated area, far outside any realistic face
+manipulation.
 
 \section{Discussion}
 
