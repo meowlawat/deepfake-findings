@@ -256,17 +256,43 @@ Before any interference quantity is interpreted, each detector must clear a
 baseline AUC floor on unwatermarked data: a detector near chance makes
 $\Delta$AUC a measurement of noise, indistinguishable from a genuine null.
 
-One of the two candidate detectors fails this check outright. A
-widely-downloaded community deepfake detector whose model card reports
-$98.70\%$ test accuracy achieves $\mathrm{AUC}=0.5365$ on our evaluation
-distribution --- statistically indistinguishable from chance. Its
-interference rows are reported in Table~\ref{tab:t1} for completeness and
-excluded from all interpretation.
+We screened every public deepfake image classifier returned by a hub search
+(six checkpoints). \textbf{Five of the six operate at chance on our
+evaluation distribution.}
 
-We report this because it generalises beyond our setting: published zero-shot
-detector accuracies are quoted on the distribution a model was tuned for, and
-a precondition check is the only thing standing between such a model and a
-results table full of confident noise.
+\begin{center}
+\begin{tabular}{lrl}
+\toprule
+Checkpoint & Baseline AUC & \\
+\midrule
+EfficientNet-B6 (\texttt{Skullly}) & 0.8952 & clears floor \\
+ViT (\texttt{Wvolf}) & 0.5365 & chance; card claims $98.70\%$ \\
+\texttt{DaMsTaR/Detecto} & 0.5365 & chance \\
+\texttt{prithivMLmods/v2} & 0.5299 & chance \\
+\texttt{dima806} & 0.5296 & chance \\
+\texttt{Hemg} & 0.4576 & below chance \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Two observations. The \texttt{Wvolf} and \texttt{DaMsTaR} checkpoints agree to
+four decimal places across 300 images, which is not plausibly coincidence and
+suggests one is a re-upload of the other --- so the pool of genuinely
+independent public detectors is smaller than a hub search implies. And a model
+scoring below $0.5$ most likely carries an inverted label convention rather
+than anti-predictive skill; either way it does not clear the floor.
+
+This matters beyond our setting. Published zero-shot accuracies are quoted on
+the distribution a model was tuned for, and the gap between $98.70\%$ on a
+card and $\mathrm{AUC}=0.54$ in use is not a rounding error. A precondition
+check is the only thing standing between such a checkpoint and a results table
+full of confident noise --- and in our case it was the difference between one
+usable measurement and five spurious ones.
+
+It also bounds this study: only one public detector clears the floor, so our
+interference result rests on a single model. No amount of further screening
+fixes that; it is a property of what exists publicly, and we state it as a
+limitation rather than as future work.
 
 \subsection{Interference, net of a payload-free control (E1)}
 \label{sec:e1}
