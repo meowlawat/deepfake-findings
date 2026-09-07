@@ -19,19 +19,29 @@ Deepfake Detection}
 \maketitle
 
 \begin{abstract}
-\TODO{Write last. Skeleton: (1) Hybrid forensics fuses proactive watermarking
-with passive detection. (2) The two evidence sources are computed from the same
-pixels, and watermark signals are known to overlap with the forgery signals
-detectors rely on, so they are not independent. (3) We quantify this interference
-across $S$ watermark schemes and $D$ detectors \emph{against a PSNR-matched
-payload-free control}, separating watermark-specific interference from generic
-perturbation brittleness, and show that naive score fusion inherits it as a
-calibration gap on watermarked media. (4) Because risk-derived
-abstention thresholds are only optimal for calibrated posteriors, that gap
-silently invalidates the decision rule on exactly the traffic provenance marking
-is deployed to protect. (5) We give an interference-aware fusion that reduces the
-calibration gap by \TODO{X} and the decision risk deviation by \TODO{Y} at equal
-detection AUC.}
+Provenance watermarking and passive synthetic-media detection are increasingly
+deployed together, and prior work reports that embedding a watermark can
+\emph{harm} a detector inspecting the same pixels, because the mark's signal
+overlaps the artefacts detection relies on. That claim has a confound: any
+imperceptible perturbation shifts a detector trained on clean images, so
+degradation after marking need not be watermark-specific. We re-measure the
+effect against a control the prior literature does not apply --- a
+payload-free perturbation matched per image to the watermark's own PSNR ---
+and under a decision gate, threshold, and fallback framing all fixed before
+the data was scored. Across two watermark schemes spanning the
+hand-crafted/learned divide and two detector families, \emph{we do not detect
+watermark-specific interference in detector ranking}: net of the control,
+$\Delta\mathrm{AUC}$ is \TODO{report with CIs}, and we report what effect
+sizes these intervals exclude rather than claiming absence. Two findings are
+of independent use. First, the control arm itself: without it, raw degradation
+is not attributable to the watermark. Second, a detector-floor precondition
+caught a widely-downloaded checkpoint advertising $98.70\%$ accuracy operating
+at $\mathrm{AUC}{=}0.54$ --- chance --- on a synthesis distribution it was not
+tuned for, which would otherwise have contributed an entire table of confident
+noise. We separately show why our corpus cannot settle the downstream fusion
+question, and decline to answer it rather than answering it degenerately.
+\TODO{Finalise numbers once results/e1\_bootstrap.json is in; keep the
+"we do not detect" framing, never "there is no".}
 \end{abstract}
 
 \section{Introduction}
