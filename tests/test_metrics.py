@@ -133,3 +133,39 @@ def test_pure_location_shift_moves_delta_mu_not_delta_auc():
     assert metrics.delta_mu(v_shifted, v_clean) == pytest.approx(0.7, abs=1e-9)
     assert metrics.delta_auc(y, v_shifted, y, v_clean) == pytest.approx(0.0, abs=1e-9)
     assert metrics.delta_sigma(v_shifted, v_clean) == pytest.approx(1.0, abs=1e-9)
+
+
+def test_evidence_transfer_separates_attenuation_from_translation():
+    """The distinction that a Delta_mu-only analysis got wrong: a translation
+    and an attenuation both move the mean when the score distribution has
+    non-zero mean, but only the regression slope tells them apart.
+    """
+    rng = np.random.default_rng(0)
+    v_clean = rng.normal(4.0, 7.0, 5000)          # non-zero mean, like the real detector
+
+    translated = v_clean - 0.85                    # pure shift
+    t = metrics.evidence_transfer(v_clean, translated)
+    assert t["slope"] == pytest.approx(1.0, abs=1e-6)
+    assert t["intercept"] == pytest.approx(-0.85, abs=1e-6)
+
+    attenuated = 0.84 * v_clean                    # pure attenuation, no shift
+    a = metrics.evidence_transfer(v_clean, attenuated)
+    assert a["slope"] == pytest.approx(0.84, abs=1e-6)
+    assert a["intercept"] == pytest.approx(0.0, abs=1e-6)
+
+    # Both lower the mean by a similar amount, which is why Delta_mu alone
+    # cannot distinguish them - the failure mode this function exists for.
+    assert metrics.delta_mu(translated, v_clean) == pytest.approx(-0.85, abs=1e-6)
+    assert metrics.delta_mu(attenuated, v_clean) == pytest.approx(-0.64, abs=0.05)
+
+
+def test_attenuation_is_nearly_invisible_to_auc():
+    """b<1 preserves ranking exactly when a=0, so AUC cannot detect it. This
+    is why the pre-registered AUC gate returned a null while a real effect
+    was present.
+    """
+    rng = np.random.default_rng(1)
+    y = rng.integers(0, 2, 4000)
+    v_clean = rng.normal(0, 1, 4000) + y * 1.5
+    attenuated = 0.84 * v_clean
+    assert metrics.auc(y, attenuated) == pytest.approx(metrics.auc(y, v_clean), abs=1e-9)

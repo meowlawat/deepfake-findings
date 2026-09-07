@@ -336,3 +336,111 @@ confirmatory split for H1/H2.
 | **H3** — train − test baseline AUC gap | **no contamination detected** | −0.0002 against a 0.05 threshold |
 
 Scale: 60,000 images scored, 140,000 detector evaluations, all three splits.
+
+---
+
+# CORRECTION (post-hoc audit): the mechanism is attenuation, not translation
+
+A cross-verification pass recomputed every headline number independently from
+the raw shards and then interrogated the mechanism. The numbers reproduce
+exactly. **The interpretation attached to them was wrong, and is retracted
+here.**
+
+## What reproduces
+
+Independent reimplementation, not importing `aggregate_large.py`:
+20,000 images, all five arms present on every image, zero label
+disagreements, exactly 10,000/10,000 class balance.
+`Δ_μ_net` = +0.8373 (dwtDctSvd) and +1.3530 (rivaGan) — identical to the
+reported values. The null arm's PSNR matching is essentially perfect:
+**100%** of images within 0.5 dB of their scheme's PSNR (mean difference
++0.009 dB and −0.013 dB). The control is fair.
+
+## What was wrong
+
+Decomposing `Δ_μ_net` into its two halves:
+
+| Scheme | watermark − clean | null − clean | net |
+| --- | --- | --- | --- |
+| dwtDctSvd | **−0.009** | −0.846 | +0.837 |
+| rivaGan | +0.605 | −0.748 | +1.353 |
+
+For dwtDctSvd the watermark moves the mean by **−0.009 logits — nothing**.
+The entire net effect is the *null arm falling*. The claim written into
+`docs/06` and `paper/main.tex` — "watermarking shifts the detector's score
+distribution toward fake by 0.84–1.35 logits" — is false for dwtDctSvd and
+overstated for rivaGan.
+
+Worse, the effect is not a location shift at all. `Δ_μ_net` by clean-score
+quintile, where a translation would be flat:
+
+| clean-score quintile | net |
+| --- | --- |
+| [−11.6, −2.8] | **−0.364** |
+| [−2.8, 1.2] | +0.279 |
+| [1.2, 6.2] | +0.787 |
+| [6.2, 11.2] | +1.200 |
+| [11.2, 36.8] | **+2.285** |
+
+Regressing each arm's score on the clean score, `v_arm = a + b·v_clean`:
+
+| Arm | slope b | intercept a |
+| --- | --- | --- |
+| dwtDctSvd | 0.968 | +0.125 |
+| **null[dwtDctSvd]** | **0.834** | −0.158 |
+| rivaGan | 0.990 | +0.649 |
+| **null[rivaGan]** | **0.850** | −0.125 |
+
+A translation predicts b = 1. The null arms show **b ≈ 0.84 with intercept
+≈ 0**: equal-PSNR random perturbation *attenuates* the detector's log-odds
+evidence toward zero by roughly 16%. The watermark arms show b ≈ 0.97–0.99 —
+evidence essentially preserved.
+
+**`Δ_μ_net` was the wrong estimand.** Attenuating a distribution whose mean
+is not zero (clean mean = +4.16 logits) lowers that mean, so `Δ_μ` reports a
+"location shift" for what is really a slope change. The pre-registered test
+was passed by a real effect measured with the wrong instrument.
+
+## What the corrected finding is
+
+**At matched imperceptibility (~40 dB PSNR), random perturbation attenuates a
+detector's evidence by ~16%, while watermarking of identical imperceptibility
+does not. Watermarks are not equivalent to noise of the same energy.**
+
+Two consequences, and they are sharper than the original framing:
+
+1. **Attenuation is invisible to AUC by construction.** With intercept ≈ 0 it
+   is a monotone rescaling, and AUC is rank-based — a unit test in
+   `tests/test_metrics.py` confirms AUC is *exactly* unchanged under pure
+   attenuation. This is why the pre-registered AUC gate returned a null while
+   a real effect was present. Any study gating on AUC alone cannot see this.
+2. **Attenuation is exactly what breaks calibration.** Shrinking log-odds
+   toward zero systematically changes the score-to-posterior mapping, so a
+   threshold calibrated on unperturbed media is applied to evidence that has
+   been scaled down. The calibration thesis survives — but the hazard is
+   ordinary channel noise, not watermarking.
+
+The relationship to the prior literature inverts accordingly. The "watermarks
+are bugs for deepfake detectors" concern is, in this setting, **not**
+supported: watermarks are markedly *less* damaging to detector evidence than
+equal-PSNR noise. Only the null-arm control makes that visible — without it,
+dwtDctSvd's −0.009 would read as "no effect" and the detector's real fragility
+to ordinary perturbation would go unmeasured.
+
+## Effect sizes, stated properly
+
+The original write-up called ~1 logit "huge". Against a clean-score standard
+deviation of 7.04 that is 0.12–0.19 sd; paired per-image Cohen's *dz* is 0.38
+and 0.55. Moderate, not huge.
+
+The effect is also **class-dependent**, which the pooled figure hid:
+
+| Scheme | net on REAL | net on FAKE |
+| --- | --- | --- |
+| dwtDctSvd | +0.379 | +1.296 |
+| rivaGan | +0.985 | +1.721 |
+
+Noise erodes evidence on manipulated images ~3× more than on real ones
+(dwtDctSvd null: −1.447 on fakes vs −0.246 on reals). That asymmetry is the
+operationally important part: **imperceptible noise preferentially destroys
+the evidence that something is fake.**

@@ -77,6 +77,42 @@ def delta_auc_net(delta_auc_scheme: float, delta_auc_null: float) -> float:
     return delta_auc_scheme - delta_auc_null
 
 
+def evidence_transfer(v_clean: np.ndarray, v_perturbed: np.ndarray) -> dict:
+    """Fit v_perturbed = a + b * v_clean and report (a, b) - docs/02 S3.
+
+    This exists because Delta_mu is the WRONG estimand for what perturbation
+    actually does to a detector, and using it produced a materially wrong
+    interpretation in an earlier draft of this work.
+
+    Measured on 20,000 images: an equal-PSNR random perturbation gives
+    b ~ 0.84 with a ~ 0, i.e. it ATTENUATES the detector's log-odds evidence
+    toward zero by ~16%. A watermark at identical PSNR gives b ~ 0.97-0.99,
+    i.e. it leaves the evidence essentially intact.
+
+    Delta_mu cannot distinguish those cases. Attenuation of a distribution
+    whose mean is not zero (here +4.16 logits) shows up as a mean shift, so
+    Delta_mu reports "a location shift" for what is really a slope change.
+    Two consequences follow, and both matter:
+
+    - b < 1 is nearly invisible to AUC, because attenuation is monotone and
+      AUC is rank-based. A study that gates on AUC alone cannot see it.
+    - b < 1 is exactly what breaks calibration: shrinking log-odds toward
+      zero systematically changes the score-to-posterior mapping, so a
+      threshold calibrated on unperturbed media is applied to evidence that
+      has been scaled down.
+
+    Report (a, b) alongside any Delta_mu, and prefer b when describing the
+    mechanism.
+    """
+    v_clean = np.asarray(v_clean, dtype=float)
+    v_perturbed = np.asarray(v_perturbed, dtype=float)
+    if len(v_clean) < 2:
+        return {"slope": float("nan"), "intercept": float("nan"), "resid_sd": float("nan")}
+    slope, intercept = np.polyfit(v_clean, v_perturbed, 1)
+    resid = v_perturbed - (intercept + slope * v_clean)
+    return {"slope": float(slope), "intercept": float(intercept), "resid_sd": float(resid.std())}
+
+
 def expected_calibration_error(y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 15) -> float:
     """Equal-mass-bin ECE. Standard definition, e.g. Guo et al. 2017 (calibration)."""
     y_true = np.asarray(y_true, dtype=float)
