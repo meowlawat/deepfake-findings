@@ -1,0 +1,54 @@
+cost_model:
+  c_fn: 100
+  c_fp: 20
+  c_r: 1
+crypto_binding:
+  hash_size: 3
+  key_id_bytes: 4
+dataset:
+  calibration_fraction: 0.3
+  image_size: 256
+  max_items_per_class: null
+  root: data/corpus/test
+  split_seed: 0
+detectors:
+  effnet: Skullly/DeepFake-EN-B6
+  floor_auc: 0.8
+  leakage_suspicion_auc: 0.97
+  own: own:models/own_detector.json
+  vit: Wvolf/ViT_Deepfake_Detection
+fusion:
+  bootstrap_ci: 0.95
+  bootstrap_seed: 0
+  models:
+  - F0
+  - F1
+  - F2
+  - F3
+  - F4
+  - F5
+  n_bins_ece: 15
+  n_bootstrap: 2000
+rho_sweep:
+- 0.05
+- 0.25
+- 0.5
+- 1.0
+transforms:
+  brightness_contrast_pct:
+  - 20
+  - -20
+  jpeg_quality:
+  - 90
+  - 70
+  - 50
+  resize_scale:
+  - 0.75
+  - 0.5
+watermark:
+  null_arm: true
+  null_tolerance_db: 0.5
+  payload_bits: 32
+  schemes:
+  - dwtDctSvd
+  - rivaGan
