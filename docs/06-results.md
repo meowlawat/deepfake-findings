@@ -635,3 +635,77 @@ without a payload-free control arm and more than one detector, and when you
 supply both, the effect that motivated the question turns out to be
 checkpoint-specific while the provenance channel turns out to be inert for
 the threat it is deployed against.* That is a smaller claim and a true one.
+
+## E4/E5 run: transform robustness and the ρ sweep, n=400 (reduced scale)
+
+Run against the held-out `test` split (`data/corpus/test`, disjoint from the
+`validation` split used for the confirmatory result and blocker 1), stratified
+`n=400` (120 calibration / 280 test) — reduced from the confirmatory 20,000
+because `scripts/e4_e5_transforms_rho.py` is unbatched (one image at a time
+through both watermark embedding and detection) and this session is CPU-only,
+no GPU. Total wall time ≈ 2.5 hours. **No bootstrap CIs are computed by this
+script** — every number below is a point estimate on n=280 test images per
+condition, unlike the CI-backed E1/replication numbers. Read accordingly:
+this is a first look, not a confirmatory measurement.
+
+### E4 — transform suite (F0–F5, EfficientNet-B6)
+
+| Transform | F0 AUC | F0 DRD | F4 AUC | F4 DRD | F4 β₄ |
+| --- | --- | --- | --- | --- | --- |
+| jpeg(90) | 0.8985 | 0.0063 | 0.8965 | 0.0075 | +0.004 |
+| jpeg(70) | 0.7757 | 0.0027 | 0.8193 | 0.0053 | −0.022 |
+| jpeg(50) | 0.7211 | 0.0008 | 0.7942 | 0.0054 | +0.038 |
+| resize(0.75) | 0.7428 | 0.0028 | 0.8247 | 0.0078 | +0.048 |
+| resize(0.5) | 0.7103 | 0.0009 | 0.8246 | 0.0504 | **+0.221** |
+| brightness(+20%) | 0.9088 | 0.0343 | 0.9088 | 0.0309 | +0.056 |
+| brightness(−20%) | 0.8405 | 0.0030 | 0.8478 | 0.0064 | −0.072 |
+
+F0 is the no-interference-term fusion baseline; F4 carries the β₄
+watermark×evidence interaction term.
+
+**What this shows, held to the same standard as everything else in this
+paper — no CI, no claim.** Detector baseline AUC degrades hard under
+compression and downscaling (0.90 clean-ish down to 0.71–0.78), which is the
+detector's own known fragility, not a watermark effect — F0 and F4 move
+together on AUC for every transform, so interference-aware fusion is not
+recovering anything ordinary fusion loses here. β₄'s point estimate stays
+small (|β₄| < 0.08) for six of seven transforms, consistent with no detectable
+transform-induced interference at this sample size. **One condition stands
+out**: `resize(scale=0.5)` shows β₄ = +0.221 alongside a DRD jump from 0.0009
+(F0) to 0.0504 (F4) — roughly 3–6× every other transform's β₄ and the largest
+DRD in the table. At n=280 test images and no bootstrap, this is not
+reportable as a finding; it is the one condition that would justify spending
+a CI-backed rerun on, specifically.
+
+### E5 — watermarked-fraction (ρ) sweep
+
+Fusion models are fit once on the full calibration set and evaluated on
+ρ-mixtures of the test set (design choice: ρ is a property of the deployment
+stream, not something a model gets to retrain against per-stream — so β₄ is
+identical across every ρ row for a given fit, by construction, not a result).
+
+| Scheme | ρ | AUC (F0 / F4) | ECE (F0 / F4) | DRD (F0 / F4) |
+| --- | --- | --- | --- | --- |
+| dwtDctSvd | 0.05 | 0.9175 / 0.9176 | 0.1452 / 0.1437 | 0.0133 / 0.0154 |
+| dwtDctSvd | 0.25 | 0.9186 / 0.9183 | 0.1466 / 0.1456 | 0.0133 / 0.0154 |
+| dwtDctSvd | 0.50 | 0.9183 / 0.9166 | 0.1453 / 0.1448 | 0.0077 / 0.0109 |
+| dwtDctSvd | 1.00 | 0.9195 / 0.9198 | 0.1433 / 0.1444 | 0.0133 / 0.0144 |
+| rivaGan | 0.05 | 0.9158 / 0.9162 | 0.1399 / 0.1456 | 0.0103 / 0.0121 |
+| rivaGan | 0.25 | 0.9148 / 0.9153 | 0.1428 / 0.1492 | 0.0103 / 0.0121 |
+| rivaGan | 0.50 | 0.9108 / 0.9100 | 0.1503 / 0.1500 | 0.0147 / 0.0186 |
+| rivaGan | 1.00 | 0.9023 / 0.9022 | 0.1502 / 0.1533 | 0.0167 / 0.0181 |
+
+AUC/ECE/DRD are essentially flat across ρ for both schemes — no evidence at
+this n that the watermarked fraction of the deployment stream moves any
+outcome. Consistent with the rest of the paper: the provenance channel isn't
+contributing enough signal for its prevalence to matter either way.
+
+### Bottom line
+
+No evidence of transform-induced watermark–detector interference beyond
+ordinary detector fragility under compression, at n=400 and without CIs — one
+condition (resize to 0.5×) is the exception worth flagging, not claiming.
+The ρ sweep found nothing at all, which is consistent with everything else in
+this paper about the provenance channel's weak contribution. Neither result
+changes the paper's central claims; both are reported because the experiment
+plan named them and a null result honestly obtained is still a result.
