@@ -72,10 +72,150 @@
   note   = {Verified: abstract only. 337 participants; top methods use foundation models, ensembles, degradation training.}
 }
 
+% --- verified this session via web fetch (title/authors/abstract confirmed
+% against the live arXiv/publisher page); abstract depth only, same standard
+% as the block above ---
+
+@inproceedings{wu2023sepmark,
+  title     = {{SepMark}: Deep Separable Watermarking for Unified Source Tracing and Deepfake Detection},
+  author    = {Wu, Xiaoshuai and Liao, Xin and Ou, Bo},
+  booktitle = {Proceedings of the 31st ACM International Conference on Multimedia (ACM MM)},
+  year      = {2023},
+  eprint    = {2305.06321},
+  archivePrefix = {arXiv},
+  note      = {Verified: abstract only, via web fetch. Two-decoder design (robust Tracer, fragile Detector) is the semi-fragile counterpoint to the robust scheme we test in \S\ref{sec:provenance-inert}.}
+}
+
+@inproceedings{wang2025fractalforensics,
+  title     = {{FractalForensics}: Proactive Deepfake Detection and Localization via Fractal Watermarks},
+  author    = {Wang, Tianyi and Cheng, Harry and Liu, Ming-Hui and Kankanhalli, Mohan},
+  booktitle = {Proceedings of the 33rd ACM International Conference on Multimedia (ACM MM)},
+  year      = {2025},
+  eprint    = {2504.09451},
+  archivePrefix = {arXiv},
+  note      = {Verified: abstract only, via web fetch. Oral. Semi-fragile by design (robust to processing, fragile to manipulation) -- the property our tested scheme lacks.}
+}
+
+@inproceedings{wang2024lampmark,
+  title     = {{LampMark}: Proactive Deepfake Detection via Training-Free Landmark Perceptual Watermarks},
+  author    = {Wang, Tianyi and Huang, Mengxiao and Cheng, Harry and Zhang, Xiao and Shen, Zhiqi},
+  booktitle = {Proceedings of the 32nd ACM International Conference on Multimedia (ACM MM)},
+  year      = {2024},
+  eprint    = {2411.17209},
+  archivePrefix = {arXiv},
+  note      = {Verified: abstract only, via web fetch.}
+}
+
+@misc{he2025waveguard,
+  title  = {{WaveGuard}: Robust Deepfake Detection and Source Tracing via Dual-Tree Complex Wavelet and Graph Neural Networks},
+  author = {He, Ziyuan and Guo, Zhiqing and Wang, Liejun and Yang, Gaobo and Diao, Yunfeng and Ma, Dan},
+  year   = {2025},
+  eprint = {2505.08614},
+  archivePrefix = {arXiv},
+  note   = {Verified: abstract only, via web fetch.}
+}
+
+@misc{sun2025diffmark,
+  title  = {{DiffMark}: Diffusion-based Robust Watermark Against Deepfakes},
+  author = {Sun, Chen and Sun, Haiyang and Guo, Zhiqing and Diao, Yunfeng and Wang, Liejun and Ma, Dan and Yang, Gaobo and Li, Keqin},
+  year   = {2025},
+  eprint = {2507.01428},
+  archivePrefix = {arXiv},
+  note   = {Verified: abstract only, via web fetch.}
+}
+
+@inproceedings{che2026gifguard,
+  title     = {{GIFGuard}: Proactive Forensics against Deepfakes in Facial {GIF}s via Spatiotemporal Watermarking},
+  author    = {Che, Shupeng and Guo, Zhiqing and Miao, Changtao and Ma, Dan and Yang, Gaobo},
+  booktitle = {Proceedings of the 34th ACM International Conference on Multimedia (ACM MM)},
+  year      = {2026},
+  eprint    = {2604.26519},
+  archivePrefix = {arXiv},
+  note      = {Verified: abstract only, via web fetch.}
+}
+
+@misc{ni2025diffusionbreaks,
+  title  = {Diffusion-Based Image Editing for Breaking Robust Watermarks},
+  author = {Ni, Yunyi and Carter, Finn and Niu, Ze and Davis, Emily and Zhang, Bo},
+  year   = {2025},
+  eprint = {2510.05978},
+  archivePrefix = {arXiv},
+  note   = {Verified: abstract only, via web fetch. Shows diffusion regeneration drives watermark mutual information to zero -- an orthogonal attack surface to the splice mechanism we test.}
+}
+
+@inproceedings{zhang2024zodiac,
+  title     = {Attack-Resilient Image Watermarking Using Stable Diffusion},
+  author    = {Zhang, Lijun and Liu, Xiao and Viros Martin, Antoni and Xiong Bearfield, Cindy and Brun, Yuriy and Guan, Hui},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024},
+  eprint    = {2401.04247},
+  archivePrefix = {arXiv},
+  note      = {Verified: abstract only, via web fetch. ZoDiac.}
+}
+
+@inproceedings{zhang2024editguard,
+  title     = {{EditGuard}: Versatile Image Watermarking for Tamper Localization and Copyright Protection},
+  author    = {Zhang, Xuanyu and Li, Runyi and Yu, Jiwen and Xu, Youmin and Li, Weiqi and Zhang, Jian},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2024},
+  eprint    = {2312.08883},
+  archivePrefix = {arXiv},
+  note      = {Verified: abstract only, via web fetch. Reframes watermarking as image-bit steganography for tamper-agnostic localization.}
+}
+
+@inproceedings{zhang2025omniguard,
+  title     = {{OmniGuard}: Hybrid Manipulation Localization via Augmented Versatile Deep Image Watermarking},
+  author    = {Zhang, Xuanyu and Tang, Zecheng and Xu, Zhipei and Li, Runyi and Xu, Youmin and Chen, Bin and Gao, Feng and Zhang, Jian},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2025},
+  eprint    = {2412.01615},
+  archivePrefix = {arXiv},
+  note      = {Verified: abstract only, via web fetch. Reports gains over EditGuard.}
+}
+
+@misc{qi2026editingaway,
+  title  = {Editing Away the Evidence: Diffusion-Based Image Manipulation and the Failure Modes of Robust Watermarking},
+  author = {Qi, Qian and Tang, Jiangyun and Lee, Jim and Davis, Emily and Carter, Finn},
+  year   = {2026},
+  eprint = {2603.12949},
+  archivePrefix = {arXiv},
+  note   = {Verified: abstract only, via web fetch. Independent evidence that robust watermarking has structural failure modes against manipulation, from a diffusion-editing angle rather than our splice angle -- same conclusion, different mechanism.}
+}
+
+% --- classical / standards references, verified via web search ---
+
+@article{chow1970reject,
+  title   = {On Optimum Recognition Error and Reject Tradeoff},
+  author  = {Chow, C. K.},
+  journal = {IEEE Transactions on Information Theory},
+  volume  = {16},
+  number  = {1},
+  pages   = {41--46},
+  year    = {1970},
+  doi     = {10.1109/TIT.1970.1054406},
+  note    = {Verified: existence, venue, and content summary via web search. Source of the reject-option rule underlying \S\ref{sec:method}'s Chow thresholds.}
+}
+
+@article{guo2017calibration,
+  title   = {On Calibration of Modern Neural Networks},
+  author  = {Guo, Chuan and Pleiss, Geoff and Sun, Yu and Weinberger, Kilian Q.},
+  journal = {Proceedings of the 34th International Conference on Machine Learning (ICML), PMLR 70},
+  year    = {2017},
+  eprint  = {1706.04599},
+  archivePrefix = {arXiv},
+  note    = {Verified: existence, venue, and abstract via web search. Source of temperature scaling and the calibration-metric framing used in \S\ref{sec:calibration}.}
+}
+
+@inproceedings{rossler2019faceforensics,
+  title     = {{FaceForensics++}: Learning to Detect Manipulated Facial Images},
+  author    = {R{\"o}ssler, Andreas and Cozzolino, Davide and Verdoliva, Luisa and Riess, Christian and Thies, Justus and Nie{\ss}ner, Matthias},
+  booktitle = {IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2019},
+  note      = {Verified: existence, venue, abstract via web search.}
+}
+
 % --- NOT YET ADMITTED ---
-% EditGuard, WaveGuard (2505.08614), DiffMark (2507.01428), GIFGuard (2604.26519),
-% FITEE full-defense framework (10.1631/FITEE.2401012), 2510.05978, 2401.04247,
-% SepMark (2305.06321), FractalForensics (2504.09451), LampMark (2411.17209),
-% ICMR 2026 dual-threshold (10.1145/3805622.3810714).
-% These are either unverified or verified only as "the ID resolves". Read them,
-% update the ledger, then move them up.
+% FITEE full-defense framework (10.1631/FITEE.2401012) -- paywalled, could not
+% verify past the DOI resolving to a real Springer article page.
+% ICMR 2026 dual-threshold (10.1145/3805622.3810714) -- DOI/venue/pages
+% verified previously; ACM DL returns 403 on the abstract. Read before citing.

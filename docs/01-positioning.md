@@ -115,17 +115,22 @@ shows so".
 | Zeng et al., LAVA (ACM MM 2026) | arXiv 2604.23957 | VERIFIED | Abstract only |
 | Hopf et al., Robust Deepfake Detection, NTIRE 2026 Challenge Report | arXiv 2604.24163 | VERIFIED | Abstract only |
 | Guo et al., AI-generated Image Detection: Passive or Watermark? | arXiv 2411.13553 | VERIFIED | Abstract only |
-| SepMark | arXiv 2305.06321 | VERIFIED (ID resolves) | Search result only — read before citing |
-| FractalForensics | arXiv 2504.09451 | VERIFIED (ID resolves) | Search result only — read before citing |
-| LampMark | arXiv 2411.17209 | VERIFIED (ID resolves) | Search result only — read before citing |
-| Risk-Regulated Dual-Threshold Interval Selection (ICMR 2026) | 10.1145/3805622.3810714 | VERIFIED (DOI, venue, pages 2115-2123) | Partial abstract; ACM DL returned 403 — obtain full text |
-| EditGuard | — | UNVERIFIED | Not checked this session |
-| WaveGuard | arXiv 2505.08614 | UNVERIFIED | Not checked this session |
-| DiffMark | arXiv 2507.01428 | UNVERIFIED | Not checked this session |
-| GIFGuard | arXiv 2604.26519 | UNVERIFIED | Surfaced in search only |
-| Full-Defense Framework (FITEE) | 10.1631/FITEE.2401012 | UNVERIFIED | Not checked this session |
-| Diffusion-Based Editing Breaks Robust Watermarks | arXiv 2510.05978 | UNVERIFIED | Not checked this session |
-| Attack-Resilient Watermarking / regeneration attacks | arXiv 2401.04247 | UNVERIFIED | Not checked this session |
+| Wu et al., SepMark (ACM MM 2023) | arXiv 2305.06321 | VERIFIED, in `refs.bib` (`wu2023sepmark`) | Title/authors/abstract confirmed via web fetch against the arXiv page |
+| Wang et al., FractalForensics (ACM MM 2025) | arXiv 2504.09451 | VERIFIED, in `refs.bib` (`wang2025fractalforensics`) | Same as above |
+| Wang et al., LampMark (ACM MM 2024) | arXiv 2411.17209 | VERIFIED, in `refs.bib` (`wang2024lampmark`) | Same as above |
+| He et al., WaveGuard (2025) | arXiv 2505.08614 | VERIFIED, in `refs.bib` (`he2025waveguard`) | Same as above |
+| Sun et al., DiffMark (2025) | arXiv 2507.01428 | VERIFIED, in `refs.bib` (`sun2025diffmark`) | Same as above |
+| Che et al., GIFGuard (ACM MM 2026) | arXiv 2604.26519 | VERIFIED, in `refs.bib` (`che2026gifguard`) | Same as above |
+| Zhang et al., EditGuard (CVPR 2024) | arXiv 2312.08883 | VERIFIED, in `refs.bib` (`zhang2024editguard`) | Same as above |
+| Zhang et al., OmniGuard (CVPR 2025) | arXiv 2412.01615 | VERIFIED, in `refs.bib` (`zhang2025omniguard`) | Same as above |
+| Ni et al., Diffusion-Based Image Editing for Breaking Robust Watermarks (2025) | arXiv 2510.05978 | VERIFIED, in `refs.bib` (`ni2025diffusionbreaks`) | Same as above |
+| Zhang et al., ZoDiac / Attack-Resilient Image Watermarking Using Stable Diffusion (NeurIPS 2024) | arXiv 2401.04247 | VERIFIED, in `refs.bib` (`zhang2024zodiac`) | Same as above |
+| Qi et al., Editing Away the Evidence (2026) | arXiv 2603.12949 | VERIFIED, in `refs.bib` (`qi2026editingaway`) | Same as above |
+| Chow, On Optimum Recognition Error and Reject Tradeoff (1970) | doi:10.1109/TIT.1970.1054406 | VERIFIED, in `refs.bib` (`chow1970reject`) | Existence, venue, content summary via web search |
+| Guo et al., On Calibration of Modern Neural Networks (ICML 2017) | arXiv 1706.04599 | VERIFIED, in `refs.bib` (`guo2017calibration`) | Existence, venue, abstract via web search |
+| Rössler et al., FaceForensics++ (ICCV 2019) | openaccess.thecvf.com | VERIFIED, in `refs.bib` (`rossler2019faceforensics`) | Existence, venue, abstract via web search |
+| Risk-Regulated Dual-Threshold Interval Selection (ICMR 2026) | 10.1145/3805622.3810714 | VERIFIED (DOI, venue, pages 2115-2123) | Partial abstract; ACM DL returned 403 — obtain full text before citing |
+| Full-Defense Framework (FITEE) | 10.1631/FITEE.2401012 | UNVERIFIED | Springer redirected to a login wall this session; still not cited |
 
 ### Numeric claims under quarantine
 

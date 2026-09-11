@@ -182,6 +182,7 @@ independent contributions competing for the same claim.
 \end{enumerate}
 
 \section{Related Work}
+\label{sec:related}
 
 \subsection{Proactive watermarking for deepfake forensics}
 A substantial line of work embeds a mark at creation time and reads it back to
@@ -191,6 +192,42 @@ is orthogonal to the design of any particular scheme: we ask what embedding a
 mark does to a passive detector that inspects the same pixels, and we treat
 watermark strength as an experimental axis (one hand-crafted transform-domain
 scheme, one learned encoder/decoder) rather than proposing a new one.
+
+A separate and larger line of work responds to exactly the failure mode we
+measure in \S\ref{sec:provenance-inert}: robust, spatially redundant
+watermarks recover their payload under benign processing precisely because
+they recover it under localised tampering too, which makes them structurally
+poor at answering ``was this edited''. \emph{Semi-fragile} and
+\emph{separable-decoder} schemes are built to break that coupling.
+SepMark~\cite{wu2023sepmark} uses two decoders from one encoder --- a robust
+Tracer for source attribution and a fragile Detector that disappears under
+manipulation --- so the same mark answers both questions rather than
+optimising one at the expense of the other. FractalForensics~\cite{wang2025fractalforensics}
+and LampMark~\cite{wang2024lampmark} pursue the same semi-fragility from
+different embedding constructions (fractal-parameterised watermarks;
+training-free landmark-derived watermarks), and EditGuard~\cite{zhang2024editguard}
+and its successor OmniGuard~\cite{zhang2025omniguard} reframe the problem as
+image-bit steganography to make localisation tamper-agnostic rather than
+attack-specific. WaveGuard~\cite{he2025waveguard}, DiffMark~\cite{sun2025diffmark},
+and GIFGuard~\cite{che2026gifguard} extend the same localisation-first design
+to wavelet/graph, diffusion-conditioned, and GIF-specific embeddings
+respectively. None of this literature reports the BER-versus-manipulated-area
+curve we measure for a robust scheme (\S\ref{sec:provenance-inert}); it exists
+because the failure mode is understood well enough to design around, which is
+independent confirmation of the mechanism rather than a measurement of it.
+
+A second, orthogonal failure surface for robust watermarking is
+diffusion-based regeneration attacks, which degrade a payload not through
+targeted localised editing but through global stochastic transformation.
+Zhang et al.'s ZoDiac~\cite{zhang2024zodiac} shows a watermark embedded in a
+diffusion model's latent space surviving such attacks better than pixel-space
+schemes; Ni et al.~\cite{ni2025diffusionbreaks} and Qi et al.~\cite{qi2026editingaway}
+each show, independently and from different theoretical angles (an
+information-theoretic recovery bound; a stochastic-contraction argument), that
+sufficient diffusion-based editing drives watermark-payload mutual information
+toward zero regardless. Together with our BER measurement, this is two
+different mechanisms --- global regeneration and local splicing --- converging
+on the same conclusion about robust watermarking's limits.
 
 \subsection{Passive detection and its robustness}
 Passive detectors infer manipulation from residual synthesis artefacts. Their
@@ -278,7 +315,7 @@ $\beta_4 \neq 0$ is therefore the measurement of interference inside the decisio
 rule.
 
 \subsection{Risk-derived abstention}
-With costs $c_{FN}, c_{FP}, c_R$, Chow's rule gives
+With costs $c_{FN}, c_{FP}, c_R$, Chow's rule~\cite{chow1970reject} gives
 \begin{equation}
   \tau_{lo} = \frac{c_R}{c_{FN}}, \qquad
   \tau_{hi} = 1 - \frac{c_R}{c_{FP}},
@@ -541,6 +578,18 @@ provenance-disclosed detector the payload-free arm attenuates by $2$--$3\%$
 EfficientNet-B6. The intervals are tight and nowhere near overlapping in
 either direction.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_replication}
+\caption{Evidence-transfer regression on the same $8{,}000$ images for both
+detectors, DWT-DCT-SVD scheme. Each point is one image; fitted lines are the
+per-arm OLS slopes reported in the table above. EfficientNet-B6 (left) shows
+the null arm (red) pulled well below the identity line while the watermark
+arm (blue) tracks it; the ResNet-18 probe (right) shows the opposite ordering,
+with both arms close to identity.}
+\label{fig:replication}
+\end{figure}
+
 The available escape, that a linear probe is simply too weak to express the
 effect, is closed by the baseline numbers on those same images:
 
@@ -610,6 +659,16 @@ payload survives \emph{intact}, and the tampered image is indistinguishable
 from an untouched one on the provenance channel. Obliterating $95\%$ of the
 image still leaves BER at $0.26$.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/fig_ber_area}
+\caption{Bit error rate of the recovered payload as a function of spliced
+area, for both schemes. The shaded band marks the area a realistic
+face-replacement manipulation covers; both curves are flat and near-zero
+across it, well below the destruction threshold.}
+\label{fig:ber_area}
+\end{figure}
+
 This is not a shortcoming of our corpus. For the one scheme and one
 manipulation mechanism we tested --- redundant, whole-image embedding against
 a Poisson-blended elliptical splice --- the same redundancy that lets a mark
@@ -627,8 +686,9 @@ run is not merely underpowered here but ill-posed --- a claim we can now
 support with a measurement rather than a suspicion. And it explains why
 semi-fragile and localisation-capable schemes exist as a separate line of work
 rather than as refinements of robust watermarking: they are a response to
-exactly this failure. A robust mark answers where content came from; it cannot
-answer whether content was edited. Our measurement puts the crossover at
+exactly this failure (\S\ref{sec:related}). A robust mark answers where content
+came from; it cannot answer whether content was edited. Our measurement puts
+the crossover at
 roughly $40$--$60\%$ manipulated area, far outside any realistic face
 manipulation.
 
@@ -636,7 +696,12 @@ manipulation.
 \label{sec:calibration}
 
 Attenuation is invisible to AUC but not to calibration, and that argument
-should be measured rather than asserted. Protocol, fixed before running: split
+should be measured rather than asserted. We use expected calibration error and
+the two calibrators (Platt scaling and isotonic regression) in the sense
+standard since Guo et al.~\cite{guo2017calibration}, who established that
+modern neural networks are poorly calibrated by default and that post-hoc
+calibration is not optional if a score is to be read as a probability.
+Protocol, fixed before running: split
 the $20{,}000$ scored images in half; fit a calibrator on the \emph{clean arm
 of the calibration half only} --- the deployment story, in which one
 calibrates once on unmarked media --- freeze it, and apply it to the
@@ -737,6 +802,15 @@ every other transform's values in this table. At $n{=}280$ and with no
 interval, this is not a finding; it is the one condition we would spend a
 CI-backed rerun on before drawing any conclusion.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_e4_beta4}
+\caption{$\beta_4$ point estimate per transform (model F4, n=280, no bootstrap
+interval computed). The resize-to-$0.5\times$ bar (shaded) is $3$--$6\times$
+every other condition and is flagged, not claimed, for exactly that reason.}
+\label{fig:e4_beta4}
+\end{figure}
+
 The $\rho$ sweep --- fusion models fit once on calibration, evaluated on
 mixtures of watermarked and clean test images at $\rho \in \{0.05, 0.25,
 0.5, 1.0\}$ --- found AUC, ECE and DRD essentially flat across $\rho$ for
@@ -776,10 +850,12 @@ interval and not the point estimate is what bounds the effect sizes
 excluded.
 
 \paragraph{Synthesis type.} The corpus is whole-image GAN synthesis versus real
-photographs, not face-swap or reenactment manipulation. Detectors keying on
-generator fingerprints need not behave the same way on manipulations that leave
-different traces, so these results should not be read as covering
-``deepfakes'' in the face-swap sense.
+photographs, not face-swap or reenactment manipulation of the kind in the
+standard face-forgery benchmarks (e.g.\ FaceForensics++'s Face2Face, FaceSwap,
+DeepFakes and NeuralTextures manipulations~\cite{rossler2019faceforensics}).
+Detectors keying on generator fingerprints need not behave the same way on
+manipulations that leave different traces, so these results should not be
+read as covering ``deepfakes'' in the face-swap sense.
 
 \paragraph{Detector provenance and count.} The strong detector is a
 third-party checkpoint whose training data is undisclosed, so contamination

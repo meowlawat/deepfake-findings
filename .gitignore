@@ -5,6 +5,7 @@
 *.out
 *.pdf
 !docs/**/*.pdf
+!paper/figures/*.pdf
 __pycache__/
 *.pyc
 .pytest_cache/
