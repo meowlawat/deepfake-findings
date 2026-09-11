@@ -118,8 +118,60 @@ def fig_e4_beta4():
     plt.close(fig)
 
 
+def fig_calibration():
+    """ECE by arm, both calibrators - read directly from
+    results/calibration_effect.json (same numbers as the table in Sec V-F)."""
+    d = json.loads((ROOT / "results/calibration_effect.json").read_text())
+    order = ["clean", "dwtDctSvd", "rivaGan", "null[dwtDctSvd]", "null[rivaGan]"]
+    labels = ["clean", "DWT-DCT-\nSVD", "RivaGAN", "null\n[DWT]", "null\n[Riva]"]
+    ece = {(r["arm"], r["calibrator"]): r["ece"] for r in d["rows"]}
+    platt = [ece[(a, "platt")] for a in order]
+    isotonic = [ece[(a, "isotonic")] for a in order]
+    arms = labels
+
+    x = np.arange(len(arms))
+    w = 0.35
+    fig, ax = plt.subplots(figsize=(5.4, 3.4))
+    ax.bar(x - w / 2, platt, w, label="Platt", color="#ff7f0e")
+    ax.bar(x + w / 2, isotonic, w, label="Isotonic", color="#2ca02c")
+    ax.set_xticks(x)
+    ax.set_xticklabels(arms, fontsize=8)
+    ax.set_ylabel("Expected calibration error")
+    ax.set_title("Calibration error by arm and calibrator")
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(OUT / "fig_calibration.pdf")
+    plt.close(fig)
+
+
+def fig_rho_sweep():
+    """AUC and DRD vs. rho, both schemes - from results/e4_e5_test400.json."""
+    d = json.loads((ROOT / "results/e4_e5_test400.json").read_text())
+    rows = [r for r in d["e5"] if r["model"] == "F4"]
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.0))
+    for scheme, color, marker in [("dwtDctSvd", "#1f77b4", "o"), ("rivaGan", "#ff7f0e", "s")]:
+        sub = sorted([r for r in rows if r["scheme"] == scheme], key=lambda r: r["rho"])
+        rho = [r["rho"] for r in sub]
+        axes[0].plot(rho, [r["auc"] for r in sub], marker=marker, color=color, label=scheme)
+        axes[1].plot(rho, [r["drd"] for r in sub], marker=marker, color=color, label=scheme)
+
+    axes[0].set_title("AUC vs. $\\rho$", fontsize=10)
+    axes[1].set_title("DRD vs. $\\rho$", fontsize=10)
+    for ax in axes:
+        ax.set_xlabel(r"$\rho$ (watermarked fraction)")
+    axes[0].set_ylabel("AUC")
+    axes[1].set_ylabel("Decision risk deviation")
+    axes[0].legend(fontsize=7)
+    fig.tight_layout()
+    fig.savefig(OUT / "fig_rho_sweep.pdf")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     fig_replication()
     fig_ber_area()
     fig_e4_beta4()
+    fig_calibration()
+    fig_rho_sweep()
     print(f"figures written to {OUT}")
