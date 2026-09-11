@@ -286,6 +286,7 @@ valid iff $c_R/c_{FN} + c_R/c_{FP} < 1$, and optimal only if $\hat{y}$ is
 calibrated --- the dependency this paper is about.
 
 \section{Experimental Setup}
+\label{sec:setup}
 
 \paragraph{Data.} A public corpus of StyleGAN-generated faces against real
 photographs, balanced by class. The exploratory pass used $150{+}150$ images;
@@ -687,6 +688,60 @@ constant is not a weak experiment; it is an ill-posed one, and any
 $\beta$ coefficient recovered from it would describe our sampling noise. The
 honest report is the measurement that made it ill-posed, which is why that
 measurement is a result here rather than a limitation.
+
+\subsection{Transform robustness and the $\rho$ sweep: a first look}
+\label{sec:e4e5}
+
+This is a different fusion question from \S\ref{sec:provenance-inert}'s: not
+whether the provenance channel detects localised manipulation, but whether
+the $\beta_4$ interaction term (Eq.~\ref{eq:fusion}) responds to a standard
+transform applied after watermarking, on otherwise unmanipulated images. We
+report it at reduced scale and flag that reduction rather than let a small
+n pass as confirmatory. $n{=}400$ (120 calibration / 280 test, stratified,
+held-out \emph{test} split, disjoint from the validation split used
+elsewhere), against EfficientNet-B6, across seven transform variants (JPEG
+quality $\{90,70,50\}$, resize-and-restore at scale $\{0.75, 0.5\}$,
+brightness/contrast $\pm 20\%$) applied to the watermarked image before
+detection, and a sweep over $\rho$, the fraction of the evaluation stream
+that carries a watermark at all. Unlike every
+other quantity in this paper, \emph{no bootstrap interval is computed here}
+--- each number is a point estimate on 280 test images. We hold it to that
+standard explicitly rather than let the absence of a CI go unstated.
+
+\begin{center}
+\begin{tabular}{lrrrrr}
+\toprule
+Transform & F0 AUC & F0 DRD & F4 AUC & F4 DRD & F4 $\beta_4$ \\
+\midrule
+JPEG(90)          & 0.899 & 0.006 & 0.897 & 0.008 & $+0.004$ \\
+JPEG(70)          & 0.776 & 0.003 & 0.819 & 0.005 & $-0.022$ \\
+JPEG(50)          & 0.721 & 0.001 & 0.794 & 0.005 & $+0.038$ \\
+Resize(0.75)      & 0.743 & 0.003 & 0.825 & 0.008 & $+0.048$ \\
+Resize(0.5)       & 0.710 & 0.001 & 0.825 & \textbf{0.050} & $\mathbf{+0.221}$ \\
+Brightness($+20\%$) & 0.909 & 0.034 & 0.909 & 0.031 & $+0.056$ \\
+Brightness($-20\%$) & 0.841 & 0.003 & 0.848 & 0.006 & $-0.072$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Baseline AUC degrades under compression and downscaling for both F0
+(no interaction term) and F4 (with it) \emph{together}, which is the
+detector's own known fragility under transform, not a watermark effect ---
+interference-aware fusion recovers nothing here that ordinary fusion loses.
+$\beta_4$'s point estimate stays small ($|\beta_4| < 0.08$) for six of seven
+transforms. One condition is an outlier: resizing to $0.5\times$ shows
+$\beta_4 = +0.221$ alongside a DRD jump to $0.050$, roughly $3$--$6\times$
+every other transform's values in this table. At $n{=}280$ and with no
+interval, this is not a finding; it is the one condition we would spend a
+CI-backed rerun on before drawing any conclusion.
+
+The $\rho$ sweep --- fusion models fit once on calibration, evaluated on
+mixtures of watermarked and clean test images at $\rho \in \{0.05, 0.25,
+0.5, 1.0\}$ --- found AUC, ECE and DRD essentially flat across $\rho$ for
+both schemes (full table in the released results). That is consistent with
+everything else in this paper about the provenance channel's weak
+contribution: if it is not moving the fusion outcome much at $\rho{=}1$, its
+prevalence in the stream is not going to matter either.
 
 \section{Limitations}
 
