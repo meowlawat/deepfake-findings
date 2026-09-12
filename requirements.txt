@@ -1,0 +1,30 @@
+# Pinned loosely on purpose - v1 targets a 10-day window on one machine
+# (RTX 3050 6GB) plus Kaggle's stock image. Exact-pin only if Kaggle's
+# preinstalled versions conflict.
+
+numpy
+opencv-python-headless
+scikit-image
+scikit-learn
+scipy
+Pillow
+pyyaml
+cryptography
+
+# Watermarking - docs/03 S0. onnxruntime is NOT pulled in automatically by
+# invisible-watermark and RivaGan silently fails to load without it.
+invisible-watermark>=0.2.0
+onnxruntime
+
+# Detectors - docs/03 S0 (Wvolf/ViT_Deepfake_Detection, Skullly/DeepFake-EN-B6)
+torch
+torchvision
+transformers
+huggingface_hub
+
+# Reporting
+matplotlib
+pandas
+
+# Testing
+pytest
