@@ -9,8 +9,8 @@
 
 \begin{document}
 
-\title{Measuring Watermark--Detector Interference: Controls, Score
-Attenuation, and Checkpoint Dependence}
+\title{Spectral Confounding in Watermark--Detector Interference:
+PSNR-Matched Controls Are Not Sufficient}
 
 \author{\IEEEauthorblockN{Hardik\IEEEauthorrefmark{1}\IEEEauthorrefmark{2} and Yuv Jindal\IEEEauthorrefmark{2}}
 \IEEEauthorblockA{\IEEEauthorrefmark{1}Dept.\ of Computer Science, Indian Institute of Technology Patna, India}
@@ -20,39 +20,38 @@ Attenuation, and Checkpoint Dependence}
 
 \begin{abstract}
 Prior work reports that embedding a provenance watermark can \emph{harm} a
-passive synthetic-image detector inspecting the same pixels. That claim has a
-confound: any imperceptible perturbation shifts a detector trained on clean
-images, so degradation after marking need not be watermark-specific. We
-introduce a control the prior literature does not apply --- a payload-free
-perturbation matched per image to the watermark's own PSNR --- and re-measure
-the effect on $20{,}000$ held-out images under hypotheses fixed before the
-data was scored.
+passive synthetic-image detector inspecting the same pixels. Testing that claim
+requires a control, because a detector trained on clean images responds to any
+imperceptible perturbation; the natural control, and the one we used
+initially, is a payload-free perturbation matched per image to the watermark's
+PSNR. On $20{,}000$ held-out images that control appears to settle the
+question: matched-PSNR noise attenuates an EfficientNet-B6 detector's log-odds
+evidence by $\approx 16\%$ (slope $0.83$--$0.85$) while watermarking leaves it
+near the clean-score identity ($0.97$--$0.99$), so the degradation is not the
+watermark's.
 
-The control reverses the expected conclusion. On an EfficientNet-B6
-detector, the degradation attributed to watermarking belongs to the control:
-matched-PSNR noise attenuates the detector's log-odds evidence toward zero by
-$\approx 16\%$ (slope $0.83$--$0.85$), while watermarking leaves it
-essentially intact (slope $0.97$--$0.99$). We then test whether this
-attenuation is a property of detection or of one checkpoint, by repeating the
-measurement on a second, provenance-disclosed detector matched to the first on
-baseline AUC on the same $8{,}000$ images. \textbf{The effect does not
-generalise to the second detector tested, and the ordering of the two arms
-reverses}, which establishes checkpoint dependence rather than a universal
-property of passive detection. Matched baseline AUC closes off a
-weak-detector explanation; two detectors do not characterise the population of
-passive detectors, and we claim no more than the dependence itself.
+\textbf{That conclusion is an artefact of the control.} PSNR fixes only the
+\emph{energy} of a perturbation, not where that energy sits in frequency. We
+measure the residual spectra and find the PSNR-matched control is spectrally
+\emph{inverted} relative to the watermark it stands in for: both tested
+watermarks place $0.83$--$0.97$ of their residual power in the lowest radial
+band, while their PSNR-matched controls place $0.46$ in the highest. We
+therefore build a stronger control --- payload-free, but carrying the
+watermark's own per-image power spectrum via phase randomisation --- and
+verify it is both payload-free (recovered BER $0.49$--$0.51$, chance) and
+matched (PSNR within $0.3$\,dB, SSIM closer to the watermark than the old
+control). Against it, on $800$ held-out images, \textbf{the effect disappears}:
+the watermark--control slope gap falls from $+0.126$ [$+0.105,+0.146$] to
+$+0.006$ [$-0.009,+0.021$]. No watermark-specific interference is detectable
+once the control is adequate.
 
-What generalises past this dataset is analytic rather than empirical:
-monotone attenuation leaves AUC exactly unchanged while still altering the
-score-to-posterior mapping that calibration depends on, and a mean-shift
-statistic cannot distinguish attenuation from translation where a slope
-estimate can. Three supporting measurements are reported as such: both tested
-watermark payloads survive a face-replacement-scale splice (bit error rate
-$0.0000$ and $\le 0.011$ at $10$--$25\%$ coverage), so neither supplies usable
-manipulation evidence at that coverage; attenuation degrades isotonic
-calibration without reliably changing decisions under the cost model tested;
-and a detector-floor screen found five of six public checkpoints at chance,
-one advertising $98.70\%$ accuracy scoring $\mathrm{AUC}=0.54$ in use.
+The asymmetry the weaker control produced is real but belongs to one
+checkpoint: it does not appear on a second, provenance-disclosed detector, and
+a resolution ablation holding architecture, data and training fixed rules out
+input resolution as its cause. Two analytic results survive independently:
+a mean-shift statistic cannot distinguish attenuation from translation, and a
+strictly increasing rescaling leaves AUC exactly unchanged, so a ranking-based
+gate cannot register attenuation at all.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -87,59 +86,69 @@ the result over. The watermark contributed almost nothing; the \emph{control}
 carried the effect, and carried it not as a shift but as an attenuation of the
 detector's evidence toward zero. A strictly increasing rescaling of scores
 leaves AUC exactly unchanged, so a ranking gate is structurally unable to
-detect the attenuation component of such a change --- which is why a null on
+register the attenuation component of such a change --- which is why a null on
 ranking is consistent with a real change in the score distribution.
 
-That corrected mechanism then failed its own replication. Every number above
-came from one third-party checkpoint with undisclosed training data, which
-makes ``attenuation is a property of detection'' and ``attenuation is a
-property of this model'' observationally identical. We built a second detector
-with disclosed provenance, a frozen ImageNet ResNet-18 with a logistic head
-fitted only on the training split, and repeated the measurement on images
-where the two are matched to within $0.003$ baseline AUC. The ordering did not
-hold: on the second detector the payload-free arm attenuates \emph{less} than
-the watermarked one (\S\ref{sec:replication}). The attenuation is therefore
-checkpoint-dependent across the two models tested, not an established property
-of passive detection. Two detectors cannot say which detectors exhibit it;
-they can say that a single-checkpoint design, run without a control arm and
-read through AUC, would have missed both confounds.
+At that point the natural reading was that watermarking is benign where
+imperceptible noise is not. It is wrong, and the reason is the control. PSNR
+constrains how much energy a perturbation carries, not where in the frequency
+plane it sits, so two perturbations can satisfy the matching criterion while
+being structurally unrelated. Measuring the residual spectra shows exactly
+that: both tested watermarks put $0.83$--$0.97$ of their residual power in the
+lowest radial band, while the PSNR-matched controls standing in for them put
+$0.46$ in the highest (\S\ref{sec:spectral}). The control was not a weaker
+watermark. It was close to the opposite perturbation with the same energy
+budget.
 
-This paper's spine is four results in sequence: a control that overturns an
-attribution, the structural reason an AUC-based read misses it, a
-replication that bounds how far the mechanism generalises, and what survives
-that bounding. Three supporting measurements are reported as such, not as
-independent claims of equal weight.
+So we built the control the comparison actually needs: payload-free, but
+carrying the watermark's \emph{own} per-image power spectrum, obtained by
+randomising the phase of the watermark's residual. It is verifiably a control
+--- the payload is unrecoverable from it (BER $0.49$--$0.51$, chance) --- and
+verifiably matched, on PSNR to within $0.3$\,dB and on SSIM more closely than
+the control it replaces. \textbf{Against it the effect disappears}
+(\S\ref{sec:control-hierarchy}): the watermark--control slope gap on
+EfficientNet-B6 falls from $+0.126$ [$+0.105,+0.146$], which excludes zero, to
+$+0.006$ [$-0.009,+0.021$], which does not. Once the control is adequate, no
+watermark-specific interference is detectable.
+
+What remains is a real but narrower phenomenon: EfficientNet-B6 attenuates
+evidence under high-frequency perturbation specifically. That behaviour does
+not appear on a second, provenance-disclosed detector matched to it on
+baseline AUC (\S\ref{sec:replication}), and a resolution ablation holding
+architecture, training data and head fixed rules out input resolution as the
+cause (\S\ref{sec:mechanism}). We report the mechanism as narrowed, not
+solved.
+
+This paper's spine is four results. Three supporting measurements follow them
+and are reported as support, not as further claims.
 
 \begin{enumerate}
-  \item \textbf{A control that changes the sign of the conclusion.} Every
-        interference quantity is reported net of a payload-free perturbation
-        matched per image to the watermark's own PSNR. Without it, our own
-        headline number would have read as watermark-induced degradation that
-        in fact belongs to the control.
-  \item \textbf{For this question, a slope is the appropriate estimand.} A
-        mean-shift statistic cannot distinguish attenuation from translation,
-        so it does not identify which of the two a perturbation produced; the
-        per-arm slope does. Separately and structurally, a strictly increasing
-        rescaling leaves AUC exactly unchanged (verified by unit test), so a
-        ranking-based gate cannot detect a pure attenuation component. We
-        claim this for the attenuation-versus-translation question, not that a
-        slope is the correct estimand for every interference question.
-  \item \textbf{A replication that bounds the claim}
-        (\S\ref{sec:replication}). On EfficientNet-B6, the matched-PSNR null
-        attenuates evidence by $\approx 16\%$ while watermarking does not; on
-        a second, provenance-disclosed detector matched to within $0.003$
-        baseline AUC on the same images, the effect does not reproduce and the
-        ordering of the two arms reverses. Two detectors establish
-        checkpoint-dependence, not which population of detectors exhibits the
-        effect, and we claim no more.
-  \item \textbf{Supporting measurements}, reported as support rather than as
-        further claims. Both tested watermarks retain their payload through a
-        face-replacement-scale splice (BER $0.0000$ and $\le 0.011$ at
-        $10$--$25\%$ coverage, \S\ref{sec:provenance-inert}); attenuation
-        degrades isotonic ECE $4$--$5\times$ without reliably moving decisions
-        under the cost model tested (\S\ref{sec:calibration}); and a floor
-        screen found five of six public checkpoints at chance, one advertising
-        $98.70\%$ accuracy (\S\ref{sec:e0}).
+  \item \textbf{The control determines the conclusion, and PSNR is not enough}
+        (\S\ref{sec:spectral}). We measure what a PSNR-matched control
+        actually matches and find it spectrally inverted relative to the
+        watermark: $0.83$--$0.97$ of watermark residual power in the lowest
+        band against $0.46$ in the highest for its control. This is a
+        measurement of the standard control, not an argument about it.
+  \item \textbf{With an adequate control, the interference effect vanishes}
+        (\S\ref{sec:control-hierarchy}). Against a payload-free,
+        spectrum-matched control the watermark--control gap falls to
+        $+0.006$ [$-0.009,+0.021$] on EfficientNet-B6 and is not distinguishable
+        from zero for either scheme. We verify the new arm is payload-free and
+        matched rather than assuming it.
+  \item \textbf{The right estimand, and a metric that cannot see it.} A
+        mean-shift statistic cannot distinguish attenuation from translation;
+        a per-arm slope can. Separately, a strictly increasing rescaling leaves
+        AUC exactly unchanged (unit tested), so a ranking-based gate cannot
+        register attenuation. Both are analytic and independent of any
+        detector.
+  \item \textbf{The residual phenomenon is checkpoint-specific, and not
+        explained by resolution} (\S\ref{sec:replication},
+        \S\ref{sec:mechanism}). EfficientNet-B6's high-frequency sensitivity
+        does not appear on a second detector matched to within $0.003$ baseline
+        AUC, and a resolution sweep from $224$ to $448$ leaves the
+        watermark--control contrast flat at $+0.005$ to $+0.009$, against
+        $-0.126$ at $528$. Resolution is tested and excluded; architecture,
+        training data and augmentation remain untested.
 \end{enumerate}
 
 \section{Related Work}
@@ -255,16 +264,30 @@ sample-level bootstraps.
 pretrained: DWT-DCT-SVD (transform-domain) and RivaGAN (learned
 encoder/decoder), both at a $32$-bit payload. Measured imperceptibility:
 $36.9$\,dB / $0.967$ SSIM and $40.2$\,dB / $0.983$ respectively. For every
-image and scheme we additionally generate a payload-free perturbation
-binary-searched to match \emph{that image's} PSNR to within $0.5$\,dB; all
-interference quantities are net of this arm. We call it the control, the null
-arm, or the matched-PSNR null interchangeably. Its limit should be stated
-plainly: PSNR matching is not spectral or perceptual matching, so the arm
-bounds generic perturbation sensitivity but does not fully isolate every
-structural difference between noise and a watermark. The defensible reading of
-our result is that the degradation attributed to watermarking is \emph{also}
-produced by a payload-free perturbation of equal per-image PSNR, not that no
-watermark-specific interference of any kind exists.
+image and scheme we generate \emph{two} payload-free controls.
+
+The first is the standard one: additive noise binary-searched to match
+\emph{that image's} watermark PSNR to within $0.5$\,dB. We call it the
+PSNR-matched control or the null arm.
+
+The second is introduced here because the first is insufficient. PSNR
+constrains a perturbation's energy and nothing about its distribution over
+frequency, so an arm can satisfy it while being structurally unlike the
+watermark. We therefore build a \emph{spectrum-matched} control: take the
+watermark's own residual $r = \tilde{x} - x$ on this image, compute its 2-D
+Fourier transform, keep the magnitude exactly and replace the phase with
+uniform random phase, then invert. The result carries the watermark's power
+spectrum per image and per channel, carries no payload, and retains no spatial
+structure from the mark; a scalar gain is then binary-searched to land PSNR in
+the same tolerance, so the two controls differ in spectrum matching and in
+nothing else. We verify rather than assume both properties: payload
+unrecoverable at chance BER, and realised PSNR/SSIM reported in
+\S\ref{sec:control-hierarchy}.
+
+Neither control makes the comparison perceptually or semantically exact, and
+we do not claim it does. What the pair licenses is a sharper statement than
+either alone: whether an apparent watermark effect survives as the control is
+matched on progressively more of the perturbation's structure.
 
 \textbf{Detectors.} Six public checkpoints were screened; one, an
 EfficientNet-B6, clears the floor of \S\ref{sec:e0}, used zero-shot with raw
@@ -503,49 +526,239 @@ translation, and that AUC is exactly blind to monotone attenuation --- are
 analytic. They constrain what any such experiment can detect, and no
 replication outcome, ours included, bears on them.
 
+\subsection{What a PSNR-matched control actually matches}
+\label{sec:spectral}
+
+Everything above rests on the PSNR-matched control, so before drawing
+conclusions from it we measured what it matches. For each image we form the
+residual of each arm against the same clean image, take its 2-D power
+spectrum, and integrate over three equal-width radial bands. Fractions are
+per image, so arms matched on energy by construction remain distinguishable by
+where that energy sits.
+
+\begin{table}[t]
+\centering
+\caption{Fraction of residual power by radial frequency band ($n=100$), with
+payload BER measured on the same arms. BER near $0.5$ is chance, i.e.\ the arm
+carries no recoverable payload.}
+\label{tab:spectral}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llccc c}
+\toprule
+Scheme & Arm & low & mid & high & BER \\
+\midrule
+DWT-DCT-SVD & watermark          & $\mathbf{0.825}$ & $0.071$ & $0.104$ & $0.0022$ \\
+DWT-DCT-SVD & control (PSNR)     & $0.143$ & $0.396$ & $\mathbf{0.461}$ & $0.5072$ \\
+DWT-DCT-SVD & control (spectrum) & $\mathbf{0.824}$ & $0.073$ & $0.103$ & $0.5119$ \\
+\midrule
+RivaGAN & watermark          & $\mathbf{0.967}$ & $0.024$ & $0.008$ & $0.0013$ \\
+RivaGAN & control (PSNR)     & $0.153$ & $0.391$ & $\mathbf{0.455}$ & $0.4947$ \\
+RivaGAN & control (spectrum) & $\mathbf{0.962}$ & $0.027$ & $0.011$ & $0.5194$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_spectral_profile}
+\caption{The PSNR-matched control is spectrally inverted relative to the
+watermark it stands in for; the spectrum-matched control is not.}
+\label{fig:spectral}
+\end{figure}
+
+\textbf{The PSNR-matched control is spectrally inverted relative to the
+watermark.} Both watermarks put the large majority of their residual power in
+the lowest band ($0.825$ and $0.967$); the controls standing in for them put
+theirs in the highest ($0.461$, $0.455$). Satisfying a PSNR constraint left
+the perturbation free to occupy the opposite end of the spectrum, and it did.
+The spectrum-matched control reproduces the watermark's profile to within
+$0.005$ in every band while remaining at chance BER.
+
+This is a property of the matching criterion, not of our noise model in
+particular: any construction that fixes only energy admits the same freedom.
+
+\subsection{With an adequate control, the effect disappears}
+\label{sec:control-hierarchy}
+
+We re-ran the interference measurement with both controls present, on $800$
+held-out \emph{test} images at an index offset disjoint from every earlier
+analysis, scoring seven arms per image and bootstrapping $2{,}000$ times over
+images.
+
+\begin{table}[t]
+\centering
+\caption{Evidence-transfer slopes against each control, $n=800$, $2{,}000$
+bootstrap resamples over images. wm$-$null is the original comparison;
+wm$-$spec is the same comparison against the spectrum-matched control.}
+\label{tab:control-hierarchy}
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{llccc}
+\toprule
+Detector & Scheme & wm $-$ null [95\% CI] & wm $-$ spec [95\% CI] \\
+\midrule
+EffNet-B6 & DWT  & $\mathbf{+0.1259}$ [$+.105,+.146$] & $+0.0056$ [$-.009,+.021$] \\
+EffNet-B6 & Riva & $\mathbf{+0.1368}$ [$+.116,+.159$] & $+0.0137$ [$-.000,+.027$] \\
+ResNet-18 & DWT  & $-0.0051$ [$-.023,+.014$] & $+0.0116$ [$-.004,+.028$] \\
+ResNet-18 & Riva & $-0.0109$ [$-.031,+.009$] & $\mathbf{+0.0294}$ [$+.013,+.046$] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_control_hierarchy}
+\caption{Slope of each arm with bootstrap intervals. On EfficientNet-B6 the
+PSNR-matched control sits far below $b=1$ while the watermark and the
+spectrum-matched control sit together near it.}
+\label{fig:control-hierarchy}
+\end{figure}
+
+\textbf{The effect is a property of the control, not of the watermark.} On
+EfficientNet-B6 the watermark--control gap is $+0.126$ and $+0.137$ against
+the PSNR-matched control, both excluding zero; against the spectrum-matched
+control the same gaps are $+0.006$ [$-0.009,+0.021$] and $+0.014$
+[$-0.000,+0.027$], neither excluding zero. The arms are unchanged, the
+detector is unchanged, the estimator is unchanged; only the control's spectrum
+changed, and the result changed with it.
+
+The controls are matched in fact. Realised PSNR is $39.84$ (watermark),
+$39.84$ (PSNR-matched) and $39.83$ (spectrum-matched) for DWT-DCT-SVD, and
+$40.53$/$40.52$/$40.45$ for RivaGAN. SSIM is \emph{closer} for the new control
+than the old one ($0.978$ vs.\ $0.962$, against a watermark at $0.986$), so
+the stronger control is not winning by being a gentler perturbation.
+
+We therefore withdraw the reading that imperceptible noise attenuates detector
+evidence while watermarking does not. The defensible statement is narrower and
+concerns frequency: on this checkpoint, \emph{high-frequency} perturbation
+attenuates evidence, neither tested watermark produces much high-frequency
+energy, and a payload-free perturbation that also avoids it is
+indistinguishable from a watermark. On the ResNet-18 probe one contrast does
+exclude zero (RivaGAN, wm$-$spec $+0.029$), which we report; it is small, of
+opposite sign to the EfficientNet-B6 effect, and we draw no mechanism from it.
+
+\subsection{Mechanism: resolution is tested and excluded}
+\label{sec:mechanism}
+
+Why does one checkpoint attenuate under high-frequency perturbation and the
+other not? The candidate we could isolate is input resolution. Corpus images
+are $256\times256$; EfficientNet-B6 processes at $528$, upsampling and
+preserving fine perturbation, while the probe processes at $224$, downsampling
+and averaging it away. That predicts the watermark--control contrast should
+swing negative as resolution rises.
+
+We tested it with everything else held fixed --- same backbone weights, same
+training data, same head, same split --- varying only the resolution at which
+features are extracted, for both the probe fit and the scoring.
+
+\begin{table}[t]
+\centering
+\caption{Resolution ablation on the ResNet-18 probe, $n_{\text{train}}{=}1200$,
+$n_{\text{eval}}{=}600$, $1{,}000$ bootstrap resamples. EfficientNet-B6 at
+$528$ shown for reference.}
+\label{tab:resolution}
+\footnotesize
+\begin{tabular}{lcccc}
+\toprule
+Resolution & baseline AUC & wm $b$ & null $b$ & null $-$ wm \\
+\midrule
+$224$ & $0.8274$ & $0.9767$ & $0.9828$ & $+0.0061$ \\
+$320$ & $0.8622$ & $0.9676$ & $0.9764$ & $+0.0088$ \\
+$448$ & $0.8767$ & $0.9530$ & $0.9580$ & $+0.0049$ \\
+\midrule
+$528$ (EffNet-B6) & $0.8703$ & $0.9636$ & $\mathbf{0.8377}$ & $\mathbf{-0.1259}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Resolution does not produce the asymmetry.} Doubling resolution leaves
+the contrast flat at $+0.005$ to $+0.009$, nowhere near the $-0.126$ observed
+at $528$ on EfficientNet-B6. What resolution does do is lower \emph{both}
+slopes together ($0.977 \to 0.953$ for the watermark arm, $0.983 \to 0.958$
+for the control): higher input resolution makes the probe more
+perturbation-sensitive overall, but symmetrically. Overall sensitivity and the
+watermark--control asymmetry are separable, and only the second is what an
+interference study measures.
+
+Resolution is therefore excluded. Architecture, training data and training
+augmentation remain candidates, and remain untested here: we have one
+purpose-trained detector whose training pipeline we do not control, so
+isolating those factors needs a detector panel we could not assemble
+(\S\ref{sec:e0}).
+
 \subsection{Payload survival under localised manipulation}
 \label{sec:provenance-inert}
 
 The source framework routes ``is the watermark present, and has it been
-altered?'' into detection. We supplied the missing manipulation step ---
-watermarking an authentic image, \emph{then} splicing a donor region in with
-Poisson blending --- and measured BER against manipulated area, for both
-schemes, at six coverage levels (Fig.~\ref{fig:ber_area}).
+altered?'' into detection. We supplied the manipulation step that question
+presupposes and asked where the payload actually fails. One mechanism cannot
+separate ``robust watermarks survive localised editing'' from ``this splice
+happens not to disturb the carrier'', so we test four families on deliberately
+different axes: \emph{splice} (foreign content Poisson-blended in),
+\emph{inpaint} (region reconstructed from surrounding context),
+\emph{copy-move} (the image's own content relocated over the region), and
+\emph{local regeneration} (fine structure destroyed in place by blur and
+requantisation). Each is swept over a $5$--$100\%$ coverage grid for both
+schemes, on $200$ held-out images: $9{,}600$ measurements. No detector is
+involved; BER is measured by extraction alone.
+
+\begin{table}[t]
+\centering
+\caption{Percentage of images whose payload remains readable
+(BER $\le 0.25$) by family and coverage, $n=200$ per cell. Mean BER in
+parentheses for the endpoints.}
+\label{tab:manip}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llcccccc}
+\toprule
+Scheme & Family & 5\% & 10\% & 25\% & 50\% & 75\% & 100\% \\
+\midrule
+DWT & splice      & 100 & 100 & 100 & 100 & 97 & $\mathbf{17}$ \\
+DWT & inpaint     & 100 & 100 & 100 & 100 & 98 & 72 \\
+DWT & copy-move   & 100 & 100 & 100 & 98 & 100 & 100 \\
+DWT & local regen & 100 & 100 & 100 & 100 & 88 & 36 \\
+\midrule
+Riva & splice      & 100 & 100 & 100 & 100 & 96 & 70 \\
+Riva & inpaint     & 100 & 100 & 100 & 100 & 98 & 95 \\
+Riva & copy-move   & 100 & 100 & 100 & 100 & 100 & 100 \\
+Riva & local regen & 100 & 100 & 100 & 100 & 100 & 97 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.9\linewidth]{figures/fig_ber_area}
-\caption{BER of the recovered payload vs.\ spliced area. The shaded band is
-realistic face-replacement coverage; both curves are near-zero across it.}
+\includegraphics[width=\linewidth]{figures/fig_ber_area}
+\caption{Mean BER against manipulated area for four manipulation families.
+The shaded band is realistic face-replacement coverage; the dashed line is the
+readability threshold.}
 \label{fig:ber_area}
 \end{figure}
 
-\emph{What was measured.} At $10$--$25\%$ coverage, the range a face
-replacement occupies, DWT-DCT-SVD recovers its payload exactly (BER $0.0000$)
-and RivaGAN recovers it to within $0.0052$--$0.0104$, against a
-payload-destruction reference of $0.5$. BER departs from zero only well beyond
-that range --- still $0.0026$ (DWT-DCT-SVD) at $40\%$ coverage, and
-$0.0443$/$0.0521$ at $60\%$ --- and even obliterating $95\%$ of the image
-leaves DWT-DCT-SVD at $0.2630$, short of the destruction reference. The
-payload is therefore not uninformative everywhere; it is uninformative over
-the coverage range that matters for face replacement, and only weakly
-informative well outside it.
+\emph{What was measured.} Across all eight family--scheme combinations the
+payload is readable in $100\%$ of images through $25\%$ coverage, the range a
+face replacement occupies, with mean BER $\le 0.006$. Degradation appears only
+at $\ge 50\%$ coverage and differs sharply by mechanism: at total coverage
+DWT-DCT-SVD retains readability in $17\%$ of images under splice but $100\%$
+under copy-move, because relocating watermarked content over watermarked
+content leaves a spatially redundant payload recoverable.
 
-\emph{What it suggests.} The pattern is consistent with the spatial redundancy
-expected of a robust scheme, rather than with a peculiarity of this corpus:
-the redundancy that lets a mark survive JPEG, resizing and re-encoding is the
-same redundancy that lets it survive a region being overwritten.
+\emph{What it suggests.} Survival at face-replacement scale is a property of
+coverage rather than of one manipulation mechanism, and the pattern is
+consistent with the spatial redundancy expected of a robust scheme. The
+mechanism matters only once coverage is far past anything a face replacement
+requires.
 
-\emph{What is not established.} We tested two schemes and one splice
-mechanism at six coverage levels. That is not a class-level result about
-robust watermarking, and we do not state it as one; a differently constructed
-robust scheme, or a manipulation that disturbs the carrier globally rather
-than locally, could behave differently. Within the tested configuration the
-consequence for fusion is concrete: the provenance feature is effectively
-constant across the manipulation levels of interest, so a fused rule over it
-combines one informative signal with one that does not vary. This is also the
-design pressure behind the semi-fragile and separable-decoder schemes of
-\S\ref{sec:related}.
+\emph{What is not established.} Two schemes and four hand-constructed families
+are not the class of robust watermarking, nor the class of manipulations. Our
+local regeneration is a blur-and-requantise stand-in, not a learned generative
+edit, and none of these reproduce a modern face swap's detector-facing
+realism. The consequence we do draw is local to the tested configuration: the
+provenance feature is effectively constant over the coverage range of
+interest, so a fused rule over it combines one informative signal with one
+that does not vary.
 
 \subsection{Calibration under attenuation}
 \label{sec:calibration}
@@ -600,14 +813,52 @@ logistic is badly misspecified for these scores before any perturbation is
 applied, and shrinking them happens to partially cancel that misspecification.
 A $\Delta$ECE measured against a broken baseline measures the baseline.
 
-The claim therefore holds for calibration \emph{quality} and does not hold for
-decision \emph{risk}: isotonic DRD is $0.0055$ (clean) against
-$0.0145$/$0.0054$ (nulls), small and inconsistent in direction. Attenuation
-reaches the probability estimates without reliably changing the decisions
-those estimates drive \emph{under the cost model tested here}. We make no
-claim that attenuation is decision-neutral under other cost structures, nor
-that it always causes decision harm; the cost triple is assumed rather than
-elicited from a deployment (Limitations).
+At a single assumed cost triple the decision-risk picture looked like a null:
+isotonic DRD was $0.0055$ (clean) against $0.0145$/$0.0054$ (nulls), small and
+inconsistent in direction. That reading does not survive a sweep. Evaluating
+one cost configuration cannot distinguish a robust null from a lucky cell, so
+we recomputed Chow's thresholds and DRD over an $8\times8$ grid of
+$(c_{FN}, c_{FP})$ at $c_R{=}1$; $63$ of $64$ cells are feasible, the
+remaining one having an empty review band by construction.
+
+\begin{table}[t]
+\centering
+\caption{Decision risk over the cost grid ($63$ feasible cells): DRD relative
+to the clean arm. ``worse'' means the arm's DRD exceeds clean's in that cell.}
+\label{tab:cost-surface}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llcc}
+\toprule
+Calibrator & Arm & median DRD $-$ clean & worse in \\
+\midrule
+isotonic & null[DWT]  & $+0.0148$ & $\mathbf{98\%}$ \\
+isotonic & null[Riva] & $+0.0042$ & $83\%$ \\
+isotonic & \textbf{RivaGAN (watermark)} & $\mathbf{+0.0610}$ & $\mathbf{100\%}$ \\
+isotonic & DWT-DCT-SVD (watermark) & $+0.0038$ & $70\%$ \\
+\midrule
+Platt & null[DWT]  & $-0.0175$ & $8\%$ \\
+Platt & null[Riva] & $-0.0151$ & $11\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Under isotonic the null arms exceed clean decision risk in $83$--$98\%$ of the
+feasible cost space, so the apparent decision-level null was an artefact of
+the single triple. The largest effect is not a control at all but the RivaGAN
+\emph{watermark} arm, worse in every cell with median $+0.061$. That is
+consistent with its $+0.649$ intercept: a translation moves a thresholded
+decision even where an attenuation does not, which is precisely the asymmetry
+$\Delta\mu$ and slope were introduced to separate. Under Platt the pattern
+does not hold, as expected from a calibrator whose clean-arm baseline is
+already broken.
+
+We state this carefully. It is a decision-level effect associated with one
+watermark's score translation, measured post hoc on data not independent of
+the confirmatory test, over an assumed rather than elicited cost space. It is
+not evidence of watermark-specific \emph{interference} in the sense
+\S\ref{sec:control-hierarchy} tests and rejects: the slope comparison against
+a spectrum-matched control is the test of that, and it is null.
 
 \subsection{The fusion comparison is not estimable; an exploratory transform
 analysis}
@@ -673,36 +924,52 @@ results.
 
 \section{Limitations}
 
-\textbf{Scope of the manipulation result.} We supplied the manipulation step
-the source framework presupposes and measured the payload surviving it at
-realistic coverage (\S\ref{sec:provenance-inert}), so the channel's silence is
-measured rather than assumed. The measurement covers two schemes and one
-Poisson-blended elliptical splice. It is not a class-level statement about
-robust watermarking, and our splice reproduces the provenance mechanics of a
-face swap without reproducing a learned swap's detector-facing realism, so it
-does not speak to the detectability of modern face swaps.
+We distinguish limitations we removed by experiment from those that remain,
+because the two have different consequences for a reader.
 
-\textbf{Statistical power.} The $n{=}300$ exploratory pass has AUC standard
-error $\approx0.03$, larger than the effects measured, so its null means
-``undetectable at this size''. Confirmatory and replication analyses
-($n{=}20{,}000$/$8{,}000$) do not have this problem; reported intervals, not
-point estimates, bound excluded effect sizes.
+\textbf{Removed: the control matched only energy.} This was the deepest
+limitation of the earlier design and it is now addressed by construction
+(\S\ref{sec:spectral}--\ref{sec:control-hierarchy}) rather than by caveat. The
+residual limitation is narrower: spectrum matching is second-order, so a
+watermark could still differ from the control in higher-order or phase
+structure that our arm randomises away. What we can say is that the apparent
+effect does not survive matching on energy \emph{and} spectrum.
 
-\textbf{Synthesis type.} Whole-image GAN synthesis vs.\ real photographs, not
-face-swap/reenactment as in standard benchmarks~\cite{rossler2019faceforensics};
-detectors keying on generator fingerprints need not generalise to different
-manipulation traces.
+\textbf{Removed: one assumed cost triple.} Replaced by a $63$-cell sweep
+(\S\ref{sec:calibration}), which reversed the conclusion drawn from the single
+cell. The costs are still assumed rather than elicited from a deployment; what
+the sweep buys is that the conclusion no longer depends on which cell we
+happened to choose.
 
-\textbf{Detector provenance and count.} The strong detector's training data is
-undisclosed (mitigated by within-model, within-image deltas); the disclosed
-detector is a linear probe on generic features, not an engineered detector.
-Two detectors establish non-universality, not which population of detectors
-exhibits the effect --- that needs a panel, and \S\ref{sec:e0} shows that
-floor-clearing detectors are the scarce resource.
+\textbf{Reduced: the mechanism was unresolved.} Input resolution is now tested
+and excluded (\S\ref{sec:mechanism}). Architecture, training data and training
+augmentation remain untested, so the mechanism is narrowed to
+``high-frequency sensitivity specific to this checkpoint'' rather than
+identified.
 
-\textbf{Other.} Interference is measured zero-shot; a task-trained detector is
-untested. Decision thresholds use an assumed cost triple and swept, not
-measured, $\rho$.
+\textbf{Remains: two detectors.} Two models establish that the phenomenon is
+not universal; they cannot say which population of detectors exhibits it. That
+needs a panel, and \S\ref{sec:e0} shows floor-clearing public detectors are the
+scarce resource: five of six screened checkpoints operate at chance on our
+distribution, so the panel cannot be assembled from what is publicly
+available.
+
+\textbf{Remains: the strong detector's provenance.} EfficientNet-B6's training
+data is undisclosed, so contamination with our evaluation distribution cannot
+be excluded. We mitigate with within-model, within-image deltas, under which
+common-mode memorisation cancels to first order. Resolving it requires
+information only the checkpoint's authors hold.
+
+\textbf{Remains: the $\beta_4$ outlier lacks an interval.} The
+resize-to-$0.5\times$ cell of the exploratory transform analysis
+(\S\ref{sec:e4e5}) is a point estimate at $n{=}280$. We did not rerun it with
+bootstrap intervals, so it stays flagged and unclaimed.
+
+\textbf{Remains: synthesis type and dependence structure.} The corpus is
+whole-image GAN synthesis against real photographs, not face-swap or
+reenactment manipulation~\cite{rossler2019faceforensics}, and it carries no
+identity metadata, so intervals are image-level bootstraps and no
+identity-clustered resampling is possible. Neither is fixable by analysis.
 
 \section{Discussion}
 

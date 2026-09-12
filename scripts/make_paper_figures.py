@@ -75,24 +75,43 @@ def fig_replication():
 
 
 def fig_ber_area():
-    """BER vs. manipulated area - values as reported in docs/06-results.md
-    and paper Sec V-E, produced by the manipulation-experiment sweep."""
-    area = [10, 25, 40, 60, 80, 95]
-    dwt = [0.0000, 0.0000, 0.0026, 0.0443, 0.1953, 0.2630]
-    riva = [0.0052, 0.0104, 0.0156, 0.0521, 0.1224, 0.1615]
+    """Payload readability vs. coverage for four manipulation families, both
+    schemes. Reads results/e8_manipulation_grid.json (n=200 images, 9600
+    measurements) - supersedes the earlier single-splice curve."""
+    d = json.loads((ROOT / "results/e8_manipulation_grid.json").read_text())
+    cov = d["coverage"]
+    fams = d["families"]
+    colors = {"splice": "#d62728", "inpaint": "#1f77b4",
+              "copy_move": "#2ca02c", "local_regen": "#ff7f0e"}
+    nice = {"splice": "splice", "inpaint": "inpaint",
+            "copy_move": "copy-move", "local_regen": "local regen."}
 
-    fig, ax = plt.subplots(figsize=(5.2, 3.6))
-    ax.plot(area, dwt, marker="o", color="#1f77b4", label="DWT-DCT-SVD")
-    ax.plot(area, riva, marker="s", color="#ff7f0e", label="RivaGAN")
-    ax.axhline(0.5, color="gray", ls=":", lw=1, label="payload destroyed (BER=0.5)")
-    ax.axvspan(10, 25, color="#d62728", alpha=0.08)
-    ax.text(17.5, 0.35, "face-replacement\nscale", ha="center", fontsize=8, color="#d62728")
-    ax.set_xlabel("Manipulated area (%)")
-    ax.set_ylabel("Bit error rate")
-    ax.set_ylim(-0.02, 0.55)
-    ax.set_title("Watermark payload recovery vs. splice area")
-    ax.legend(fontsize=8)
-    fig.tight_layout()
+    fig, axes = plt.subplots(1, 2, figsize=(7.4, 3.2), sharey=True)
+    for ax, scheme in zip(axes, ["dwtDctSvd", "rivaGan"]):
+        for fam in fams:
+            ys = []
+            for c in cov:
+                rs = [r["ber"] for r in d["rows"]
+                      if r["scheme"] == scheme and r["family"] == fam
+                      and r["target_area"] == c]
+                ys.append(float(np.mean(rs)))
+            ax.plot([c * 100 for c in cov], ys, marker="o", ms=4,
+                    color=colors[fam], label=nice[fam])
+        ax.axhline(0.5, color="gray", ls=":", lw=1)
+        ax.axhline(d["readable_ber_threshold"], color="k", ls="--", lw=0.9)
+        ax.axvspan(10, 25, color="#d62728", alpha=0.07)
+        ax.set_xlabel("manipulated area (%)")
+        ax.set_title(scheme.replace("dwtDctSvd", "DWT-DCT-SVD").replace("rivaGan", "RivaGAN"),
+                     fontsize=10)
+        ax.set_ylim(-0.02, 0.55)
+    axes[0].set_ylabel("bit error rate")
+    axes[0].text(17.5, 0.44, "face-replacement\nscale", ha="center", fontsize=7,
+                 color="#d62728")
+    axes[0].text(101, d["readable_ber_threshold"] + 0.01, "readable", fontsize=7, ha="right")
+    axes[0].legend(fontsize=7, loc="upper left")
+    fig.suptitle(f"Payload survives to 25% coverage in every family (n={d['n_images']})",
+                 fontsize=10.5)
+    fig.tight_layout(rect=[0, 0, 1, 0.92])
     fig.savefig(OUT / "fig_ber_area.pdf")
     plt.close(fig)
 
