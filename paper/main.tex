@@ -104,7 +104,7 @@ they can say that a single-checkpoint design, run without a control arm and
 read through AUC, would have missed both confounds.
 
 This paper's spine is four results in sequence: a control that overturns an
-attribution, the structural reason the field's standard metric misses it, a
+attribution, the structural reason an AUC-based read misses it, a
 replication that bounds how far the mechanism generalises, and what survives
 that bounding. Three supporting measurements are reported as such, not as
 independent claims of equal weight.
@@ -282,19 +282,22 @@ configuration file.
 \label{sec:e0}
 
 A detector near chance makes $\Delta$AUC a measurement of noise. We screened
-six public checkpoints; \textbf{five operate at chance} (Table~\ref{tab:e0}):
+six public checkpoints; \textbf{five of the six operate at chance on our
+evaluation distribution} (Table~\ref{tab:e0}):
 
 \begin{table}[t]
 \centering
-\caption{Baseline AUC of every screened checkpoint.}
+\caption{Baseline AUC of every screened checkpoint on our evaluation
+distribution. $^{\dagger}$Model card advertises $98.70\%$ accuracy.}
 \label{tab:e0}
 \footnotesize
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{lrl}
 \toprule
 Checkpoint & Baseline AUC & Status \\
 \midrule
 EfficientNet-B6 (\texttt{Skullly}) & 0.8952 & clears floor \\
-ViT (\texttt{Wvolf}) & 0.5365 & chance; card claims $98.70\%$ \\
+ViT (\texttt{Wvolf})$^{\dagger}$ & 0.5365 & chance \\
 \texttt{DaMsTaR/Detecto} & 0.5365 & chance \\
 \texttt{prithivMLmods/v2} & 0.5299 & chance \\
 \texttt{dima806} & 0.5296 & chance \\
@@ -427,8 +430,9 @@ ResNet-18 & Riva & $0.949$ [$.943,.954$] & $0.976$ [$.972,.979$] & $\mathbf{+.02
 \end{tabular}
 \end{table}
 
-A slope below $1$ means the arm attenuates evidence, so a \emph{lower} slope
-is \emph{more} attenuation. \textbf{The ordering reverses between detectors.}
+Read the slope as follows: $b=1$ is no change relative to the clean score,
+$b<1$ is attenuation toward zero, and a \emph{lower} $b$ is \emph{more}
+attenuation. \textbf{The ordering reverses between detectors.}
 On EfficientNet-B6 the matched-PSNR null sits far below the watermark arm
 ($b=0.832$ vs.\ $0.966$ for DWT-DCT-SVD; $0.848$ vs.\ $0.987$ for RivaGAN):
 the null attenuates substantially more. On the provenance-disclosed detector
@@ -489,11 +493,13 @@ realistic face-replacement coverage; both curves are near-zero across it.}
 \emph{What was measured.} At $10$--$25\%$ coverage, the range a face
 replacement occupies, DWT-DCT-SVD recovers its payload exactly (BER $0.0000$)
 and RivaGAN recovers it to within $0.0052$--$0.0104$, against a
-payload-destruction reference of $0.5$. BER rises only well beyond that range,
-crossing into meaningful corruption at $40$--$60\%$ coverage, and even
-obliterating $95\%$ of the image leaves DWT-DCT-SVD at $0.26$. The payload is
-therefore not uninformative everywhere; it is uninformative over the coverage
-range that matters for face replacement.
+payload-destruction reference of $0.5$. BER departs from zero only well beyond
+that range --- still $0.0026$ (DWT-DCT-SVD) at $40\%$ coverage, and
+$0.0443$/$0.0521$ at $60\%$ --- and even obliterating $95\%$ of the image
+leaves DWT-DCT-SVD at $0.2630$, short of the destruction reference. The
+payload is therefore not uninformative everywhere; it is uninformative over
+the coverage range that matters for face replacement, and only weakly
+informative well outside it.
 
 \emph{What it suggests.} The pattern is consistent with the spatial redundancy
 expected of a robust scheme, rather than with a peculiarity of this corpus:
@@ -651,8 +657,8 @@ manipulation traces.
 undisclosed (mitigated by within-model, within-image deltas); the disclosed
 detector is a linear probe on generic features, not an engineered detector.
 Two detectors establish non-universality, not which population of detectors
-exhibits the effect --- that needs a panel, and \S\ref{sec:e0} shows floor-
-clearing detectors are the scarce resource.
+exhibits the effect --- that needs a panel, and \S\ref{sec:e0} shows that
+floor-clearing detectors are the scarce resource.
 
 \textbf{Other.} Interference is measured zero-shot; a task-trained detector is
 untested. Decision thresholds use an assumed cost triple and swept, not
@@ -714,12 +720,11 @@ rather than a finding about public detectors at large.
 
 None of this shows that watermark--detector interference is absent, and none
 of it shows that robust watermarks are generally unable to evidence tampering.
-What it shows is narrower and more awkward: the apparatus commonly used to
-look for interference --- a single public checkpoint, no payload-free control,
-AUC as the outcome --- can confuse a watermark effect with generic
-perturbation sensitivity, a property of one model with a property of
-detection, and a calibration-relevant change in the score distribution with no
-change at all.
+What it shows is narrower and more awkward: the single-checkpoint,
+no-control, AUC-based apparatus examined here can confuse a watermark effect
+with generic perturbation sensitivity, a property of one model with a property
+of detection, and a calibration-relevant change in the score distribution with
+no change at all.
 
 {\footnotesize
 \bibliographystyle{IEEEtran}
