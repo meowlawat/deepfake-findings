@@ -30,7 +30,7 @@ evidence by $\approx 16\%$ (slope $0.83$--$0.85$) while watermarking leaves it
 near the clean-score identity ($0.97$--$0.99$), so the degradation is not the
 watermark's.
 
-\textbf{That conclusion is an artefact of the control.} PSNR fixes only the
+\textbf{That conclusion does not survive an adequate control.} PSNR fixes only the
 \emph{energy} of a perturbation, not where that energy sits in frequency. We
 measure the residual spectra and find the PSNR-matched control is spectrally
 \emph{inverted} relative to the watermark it stands in for: both tested
@@ -38,21 +38,23 @@ watermarks place $0.83$--$0.97$ of their residual power in the lowest radial
 band, while their PSNR-matched controls place $0.46$ in the highest. We
 therefore build a stronger control --- payload-free, but carrying the
 watermark's own per-image power spectrum via phase randomisation --- and
-verify it is both payload-free (recovered BER $0.49$--$0.51$, chance) and
+verify it is both payload-free (recovered BER $0.51$--$0.52$, chance) and
 matched (PSNR within $0.3$\,dB, SSIM closer to the watermark than the old
-control). Against it, on $800$ held-out images, \textbf{the effect disappears}:
+control). Against it, on $800$ held-out images, \textbf{the gap closes}:
 the watermark--control slope gap falls from $+0.126$ [$+0.105,+0.146$] to
-$+0.006$ [$-0.009,+0.021$]. No watermark-specific interference is detectable
-once the control is adequate.
+$+0.006$ [$-0.009,+0.021$]. Against the stronger control we detect no
+watermark-specific interference: the remaining gap is not distinguishable from
+zero at this sample size.
 
-A band-limited dose-response locates the dimension responsible: at fixed PSNR
+A band-limited dose-response establishes frequency-dependent detector
+sensitivity: at fixed PSNR
 and zero payload, attenuation grows monotonically with the perturbation's
 frequency band ($0.908$, $0.868$, $0.809$ for low, mid, high). Frequency band
 alone does not fully account for the watermark, which attenuates less than
 even low-band noise; what tracks it is the \emph{fidelity} of the spectral
-match, with the control's slope rising from $0.838$ (PSNR-only) through
-$0.908$ (band-limited) to $0.958$ (full spectrum-matched) against the
-watermark's $0.964$. The asymmetry the weakest control produced is real but
+match: across two samples the control's slope rises from $0.838$ (PSNR-only)
+through $0.908$ (band-limited) to $0.958$ (full spectrum-matched) against the
+watermark's $0.964$, an indicative ordering rather than a single fitted trend. The asymmetry the weakest control produced is real but
 belongs to one checkpoint: it does not appear on a second,
 provenance-disclosed detector, and a resolution ablation holding architecture,
 data and training fixed excludes input resolution over the tested range. Two
@@ -111,13 +113,13 @@ with the same energy budget.
 So we built the control the comparison actually needs. It is payload-free but
 carries the watermark's \emph{own} per-image power spectrum, obtained by
 randomising the phase of the watermark's residual. Both properties are checked
-rather than assumed. The payload is unrecoverable from it (BER $0.49$--$0.51$,
+rather than assumed. The payload is unrecoverable from it (BER $0.51$--$0.52$,
 chance), and it matches the watermark on PSNR to within $0.3$\,dB and on SSIM
-more closely than the control it replaces. \textbf{Against it the effect disappears}
+more closely than the control it replaces. \textbf{Against it the gap closes}
 (\S\ref{sec:control-hierarchy}): the watermark--control slope gap on
 EfficientNet-B6 falls from $+0.126$ [$+0.105,+0.146$], which excludes zero, to
 $+0.006$ [$-0.009,+0.021$], which does not. Once the control is adequate, no
-watermark-specific interference is detectable.
+watermark-specific interference is detectable at this sample size.
 
 What remains is a real but narrower phenomenon: on EfficientNet-B6,
 attenuation increases monotonically with the perturbation's frequency band at
@@ -125,8 +127,8 @@ fixed PSNR (\S\ref{sec:frequency}), and neither watermark produces much
 high-frequency energy. That behaviour does
 not appear on a second, provenance-disclosed detector matched to it on
 baseline AUC (\S\ref{sec:replication}), and a resolution ablation holding
-architecture, training data and head fixed rules out input resolution as the
-cause (\S\ref{sec:mechanism}). We report the mechanism as narrowed, not
+architecture, training data and head fixed shows that input resolution, over
+the tested range, does not explain the asymmetry (\S\ref{sec:mechanism}). We report the mechanism as narrowed, not
 solved.
 
 This paper's spine is four results. Three supporting measurements follow them
@@ -139,7 +141,8 @@ and are reported as support, not as further claims.
         watermark: $0.83$--$0.97$ of watermark residual power in the lowest
         band against $0.46$ in the highest for its control. This is a
         measurement of the standard control, not an argument about it.
-  \item \textbf{With an adequate control, the interference effect vanishes}
+  \item \textbf{With an adequate control, the interference effect is no longer
+        detectable}
         (\S\ref{sec:control-hierarchy}). Against a payload-free,
         spectrum-matched control the watermark--control gap falls to
         $+0.006$ [$-0.009,+0.021$] on EfficientNet-B6 and is not distinguishable
@@ -590,7 +593,7 @@ $0.005$ in every band while remaining at chance BER.
 This is a property of the matching criterion, not of our noise model in
 particular: any construction that fixes only energy admits the same freedom.
 
-\subsection{With an adequate control, the effect disappears}
+\subsection{With an adequate control, the effect is no longer detectable}
 \label{sec:control-hierarchy}
 
 We re-ran the interference measurement with both controls present, on $800$
@@ -627,7 +630,9 @@ spectrum-matched control sit together near it.}
 \label{fig:control-hierarchy}
 \end{figure}
 
-\textbf{The effect is a property of the control, not of the watermark.} On
+\textbf{The apparent asymmetry depends on the control construction: it
+disappears when the control is additionally matched to the watermark's
+per-image power spectrum.} On
 EfficientNet-B6 the watermark--control gap is $+0.126$ and $+0.137$ against
 the PSNR-matched control, both excluding zero; against the spectrum-matched
 control the same gaps are $+0.006$ [$-0.009,+0.021$] and $+0.014$
@@ -1067,8 +1072,8 @@ the manipulation family they evaluate and their images are manipulated
 their overlap argument describes. Ours are zero-shot detectors on whole-image
 synthesis marked after the fact. What our result does imply for that
 literature is procedural: a reported interference effect measured against an
-energy-matched control cannot be distinguished from a spectral artefact
-without the spectra being reported.
+energy-matched control cannot rule out spectral confounding unless the
+relevant residual spectra are examined.
 
 \textbf{Our own gate had the asymmetry it warns about.} We gated on
 $\Delta\mathrm{AUC}_{net}$ while the quantity a calibration-centred thesis
@@ -1099,15 +1104,17 @@ watermarks place $0.83$--$0.97$ of their residual power in the lowest radial
 band, their controls place $0.46$ in the highest --- and a payload-free arm
 carrying the watermark's own spectrum closes the gap from $+0.126$
 [$+0.105,+0.146$] to $+0.006$ [$-0.009,+0.021$]. With the arms, detector and
-estimator unchanged, matching the control's spectrum removes the effect. No
-watermark-specific interference is detectable once the control is adequate.
+estimator unchanged, matching the control's spectrum removes the detectable
+watermark--control slope difference. The remaining gap is not distinguishable
+from zero.
 
 The residual phenomenon is narrower and belongs to a model rather than to
 detection: on EfficientNet-B6 attenuation grows monotonically with the
 perturbation's frequency band at fixed PSNR ($0.908/0.868/0.809$ for
 low/mid/high), a second provenance-disclosed detector matched to within $0.003$
-baseline AUC does not, and a resolution sweep from $224$ to $448$ excludes
-input resolution as the cause while leaving architecture, training data and
+baseline AUC does not, and a resolution sweep from $224$ to $448$ shows that
+input resolution does not explain it over that range, while leaving
+architecture, training data and
 augmentation untested. Three supporting measurements accompany this: both
 tested watermarks keep a readable payload through $25\%$ manipulated area
 across four manipulation families ($9{,}600$ measurements), so the provenance
