@@ -594,14 +594,14 @@ wm$-$spec is the same comparison against the spectrum-matched control.}
 \label{tab:control-hierarchy}
 \footnotesize
 \setlength{\tabcolsep}{2.5pt}
-\begin{tabular}{llccc}
+\begin{tabular}{llcc}
 \toprule
-Detector & Scheme & wm $-$ null [95\% CI] & wm $-$ spec [95\% CI] \\
+Detector & Sch. & wm$-$null [95\% CI] & wm$-$spec [95\% CI] \\
 \midrule
-EffNet-B6 & DWT  & $\mathbf{+0.1259}$ [$+.105,+.146$] & $+0.0056$ [$-.009,+.021$] \\
-EffNet-B6 & Riva & $\mathbf{+0.1368}$ [$+.116,+.159$] & $+0.0137$ [$-.000,+.027$] \\
-ResNet-18 & DWT  & $-0.0051$ [$-.023,+.014$] & $+0.0116$ [$-.004,+.028$] \\
-ResNet-18 & Riva & $-0.0109$ [$-.031,+.009$] & $\mathbf{+0.0294}$ [$+.013,+.046$] \\
+EffNet-B6 & DWT & $\mathbf{+.126}$ [$+.105,+.146$] & $+.006$ [$-.009,+.021$] \\
+EffNet-B6 & Riva & $\mathbf{+.137}$ [$+.116,+.159$] & $+.014$ [$-.000,+.027$] \\
+ResNet-18 & DWT & $-.005$ [$-.023,+.014$] & $+.012$ [$-.004,+.028$] \\
+ResNet-18 & Riva & $-.011$ [$-.031,+.009$] & $\mathbf{+.029}$ [$+.013,+.046$] \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -834,8 +834,8 @@ Calibrator & Arm & median DRD $-$ clean & worse in \\
 \midrule
 isotonic & null[DWT]  & $+0.0148$ & $\mathbf{98\%}$ \\
 isotonic & null[Riva] & $+0.0042$ & $83\%$ \\
-isotonic & \textbf{RivaGAN (watermark)} & $\mathbf{+0.0610}$ & $\mathbf{100\%}$ \\
-isotonic & DWT-DCT-SVD (watermark) & $+0.0038$ & $70\%$ \\
+isotonic & \textbf{RivaGAN (wm)} & $\mathbf{+0.0610}$ & $\mathbf{100\%}$ \\
+isotonic & DWT-DCT-SVD (wm) & $+0.0038$ & $70\%$ \\
 \midrule
 Platt & null[DWT]  & $-0.0175$ & $8\%$ \\
 Platt & null[Riva] & $-0.0151$ & $11\%$ \\
@@ -973,66 +973,81 @@ identity-clustered resampling is possible. Neither is fixable by analysis.
 
 \section{Discussion}
 
-\textbf{What a null does and does not mean.} We did not detect
-\cite{wu2024watermarksbugs}'s effect in our setting, which is a boundary
-condition, not a refutation: their detectors are trained for the manipulation
-family they evaluate and their images are manipulated \emph{after} marking,
-so watermark and forgery signals coexist as their argument describes. Ours are
-zero-shot detectors on whole-image synthesis marked after the fact.
+\textbf{The control is the experiment.} The substantive finding here is not a
+number about watermarking but a fact about how this class of experiment is
+built. Every arm, detector and estimator was held fixed across
+\S\ref{sec:control-hierarchy}; the only thing that changed was what the
+control was matched on, and the conclusion inverted. A PSNR-matched control is
+the obvious choice, it is what we chose, and it is not sufficient: fixing
+energy leaves the perturbation free to occupy the opposite end of the
+spectrum, and in our case it did.
+
+\textbf{What a null does and does not mean.} We do not detect
+\cite{wu2024watermarksbugs}'s effect once the control is adequate, which is a
+boundary condition rather than a refutation. Their detectors are trained for
+the manipulation family they evaluate and their images are manipulated
+\emph{after} marking, so watermark and forgery signals coexist in the way
+their overlap argument describes. Ours are zero-shot detectors on whole-image
+synthesis marked after the fact. What our result does imply for that
+literature is procedural: a reported interference effect measured against an
+energy-matched control cannot be distinguished from a spectral artefact
+without the spectra being reported.
 
 \textbf{Our own gate had the asymmetry it warns about.} We gated on
-$\Delta\mathrm{AUC}_{net}$, while the quantity a calibration-centred thesis
-needs is $\Delta\mu_{net}$. Every reading of the latter is post-hoc with
+$\Delta\mathrm{AUC}_{net}$ while the quantity a calibration-centred thesis
+needs is $\Delta\mu_{net}$; every reading of the latter is post-hoc with
 respect to that gate, which is why it was re-registered before being tested
-rather than reinterpreted in place.
+rather than reinterpreted in place. The same discipline is why
+\S\ref{sec:calibration}'s cost sweep is labelled secondary: it reuses data the
+confirmatory test already used.
 
-\textbf{One checkpoint is not a detector.} The replication of
-\S\ref{sec:replication} is the result we would have preferred to avoid and the
-one most worth reporting. Our probe is not the right second detector in any
-principled sense --- it is a weak linear head on generic features --- but a
-difference measured on a single checkpoint is not yet a finding, and the
-cheapest available remedy, a frozen backbone with a linear head trained on a
-named split, costs little enough that its absence is hard to justify. The
-detector-floor screen serves the same precondition role: a study measuring a
-\emph{difference} in detector behaviour assumes the detector behaves at all.
+\textbf{One checkpoint is not a detector, and one cell is not a cost model.}
+Two of this paper's corrections came from widening a design that had collapsed
+to a single point: one checkpoint became two and reversed a generality claim;
+one cost triple became sixty-three cells and reversed a decision-risk null.
+Neither widening was expensive. The pattern is worth more than either result.
 
 \section{Conclusion}
 
 We set out to measure whether provenance watermarking interferes with passive
-synthetic-image detection, and the defensible answer is narrower than the one
-we started toward. Against a payload-free control matched per image to the
-watermark's PSNR, on $20{,}000$ held-out images, an EfficientNet-B6 detector's
-evidence is attenuated by $\approx16\%$ under the control and left largely
-intact under watermarking, so the degradation that setup would attribute to
-the watermark is not attributable to it on that checkpoint. On a second,
-provenance-disclosed detector matched to the first within $0.003$ baseline AUC
-on the same images, the effect does not reproduce and the ordering of the two
-arms reverses. Across the two models tested, the attenuation is therefore
-checkpoint-dependent; which detectors exhibit it is a question two models
-cannot answer, and we do not answer it.
+synthetic-image detection. Against a payload-free control matched per image to
+the watermark's PSNR, the answer looked clear: on $20{,}000$ held-out images an
+EfficientNet-B6 detector's evidence is attenuated $\approx16\%$ under the
+control and left near identity under watermarking, so the degradation is not
+attributable to the watermark.
 
-What generalises is analytic rather than empirical. A mean-shift statistic
-conflates attenuation with translation, and AUC is exactly blind to monotone
-attenuation, so a design that measures with $\Delta\mu$ and gates on
-$\Delta\mathrm{AUC}$ can misidentify the mechanism and be structurally unable
-to register its attenuation component at the same time; a per-arm slope
-separates the two where a mean shift cannot. Three
-supporting measurements accompany this. Both tested watermarks retain their
-payload through a face-replacement-scale splice, providing no detectable
-evidence of manipulation at that coverage in our experiment, though BER does
-rise at far larger coverage. Attenuation degrades isotonic calibration without
-reliably changing decisions under the cost model tested. And a detector-floor
-screen found five of six public checkpoints at chance, one advertising
-$98.70\%$ accuracy, which is a precondition for trusting any of the above
-rather than a finding about public detectors at large.
+That conclusion does not survive a better control. The PSNR-matched arm is
+spectrally inverted relative to the watermark it stands in for --- both tested
+watermarks place $0.83$--$0.97$ of their residual power in the lowest radial
+band, their controls place $0.46$ in the highest --- and a payload-free arm
+carrying the watermark's own spectrum closes the gap from $+0.126$
+[$+0.105,+0.146$] to $+0.006$ [$-0.009,+0.021$]. With the arms, detector and
+estimator unchanged, matching the control's spectrum removes the effect. No
+watermark-specific interference is detectable once the control is adequate.
 
-None of this shows that watermark--detector interference is absent, and none
-of it shows that robust watermarks are generally unable to evidence tampering.
-What it shows is narrower and more awkward: the single-checkpoint,
-no-control, AUC-based apparatus examined here can confuse a watermark effect
-with generic perturbation sensitivity, a property of one model with a property
-of detection, and a calibration-relevant change in the score distribution with
-no change at all.
+The residual phenomenon is narrower and belongs to a model rather than to
+detection: EfficientNet-B6 attenuates evidence under high-frequency
+perturbation, a second provenance-disclosed detector matched to within $0.003$
+baseline AUC does not, and a resolution sweep from $224$ to $448$ excludes
+input resolution as the cause while leaving architecture, training data and
+augmentation untested. Three supporting measurements accompany this: both
+tested watermarks keep a readable payload through $25\%$ manipulated area
+across four manipulation families ($9{,}600$ measurements), so the provenance
+feature is constant over the range a face replacement occupies; attenuation
+degrades isotonic calibration, and over a $63$-cell cost grid the decision-risk
+null we previously reported does not hold; and five of six screened public
+checkpoints operate at chance on our distribution.
+
+Two results are analytic and independent of all of this: a mean-shift statistic
+cannot distinguish attenuation from translation, and a strictly increasing
+rescaling leaves AUC exactly unchanged, so a ranking-based gate cannot
+register attenuation at all.
+
+None of this shows that watermark--detector interference is absent in general,
+and none of it shows that robust watermarks cannot evidence tampering. What it
+shows is that an interference study's conclusion can be determined by a
+property of its control that the matching criterion never constrained, and
+that the standard criterion does not constrain it.
 
 {\footnotesize
 \bibliographystyle{IEEEtran}
