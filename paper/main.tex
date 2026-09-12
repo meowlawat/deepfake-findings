@@ -45,13 +45,21 @@ the watermark--control slope gap falls from $+0.126$ [$+0.105,+0.146$] to
 $+0.006$ [$-0.009,+0.021$]. No watermark-specific interference is detectable
 once the control is adequate.
 
-The asymmetry the weaker control produced is real but belongs to one
-checkpoint: it does not appear on a second, provenance-disclosed detector, and
-a resolution ablation holding architecture, data and training fixed rules out
-input resolution as its cause. Two analytic results survive independently:
-a mean-shift statistic cannot distinguish attenuation from translation, and a
-strictly increasing rescaling leaves AUC exactly unchanged, so a ranking-based
-gate cannot register attenuation at all.
+A band-limited dose-response locates the dimension responsible: at fixed PSNR
+and zero payload, attenuation grows monotonically with the perturbation's
+frequency band ($0.908$, $0.868$, $0.809$ for low, mid, high). Frequency band
+alone does not fully account for the watermark, which attenuates less than
+even low-band noise; what tracks it is the \emph{fidelity} of the spectral
+match, with the control's slope rising from $0.838$ (PSNR-only) through
+$0.908$ (band-limited) to $0.958$ (full spectrum-matched) against the
+watermark's $0.964$. The asymmetry the weakest control produced is real but
+belongs to one checkpoint: it does not appear on a second,
+provenance-disclosed detector, and a resolution ablation holding architecture,
+data and training fixed excludes input resolution over the tested range. Two
+analytic results survive independently: a mean-shift statistic cannot
+distinguish attenuation from translation, and a strictly increasing rescaling
+leaves AUC exactly unchanged, so a ranking-based gate cannot register
+attenuation at all.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -65,10 +73,10 @@ experimental controls, pre-registration
 Two defences against synthetic media are converging in deployment. Proactive
 provenance marking embeds a signal at creation time so origin can be verified
 later; passive detection infers manipulation from residual synthesis
-artefacts. Both are computed from the same pixels, so they are not
-independent: Wu et al.~\cite{wu2024watermarksbugs} report that watermarking
-models built for genuine images can \emph{harm} a deployed detector, because
-watermark signals overlap the forgery signals detection relies on; the same
+artefacts. Both read the same pixels, so they are not independent. Wu et
+al.~\cite{wu2024watermarksbugs} report that watermarking models built for
+genuine images can \emph{harm} a deployed detector, on the argument that
+watermark signals overlap the forgery signals detection relies on. The same
 pathology is reported independently in audio~\cite{muller2026watermarkshortcut}.
 If that holds generally, a detector's score distribution shifting on marked
 media invalidates any decision threshold calibrated on unmarked media.
@@ -89,30 +97,32 @@ leaves AUC exactly unchanged, so a ranking gate is structurally unable to
 register the attenuation component of such a change --- which is why a null on
 ranking is consistent with a real change in the score distribution.
 
-At that point the natural reading was that watermarking is benign where
-imperceptible noise is not. It is wrong, and the reason is the control. PSNR
-constrains how much energy a perturbation carries, not where in the frequency
-plane it sits, so two perturbations can satisfy the matching criterion while
-being structurally unrelated. Measuring the residual spectra shows exactly
-that: both tested watermarks put $0.83$--$0.97$ of their residual power in the
-lowest radial band, while the PSNR-matched controls standing in for them put
-$0.46$ in the highest (\S\ref{sec:spectral}). The control was not a weaker
-watermark. It was close to the opposite perturbation with the same energy
-budget.
+The natural reading at that point was that watermarking is benign where
+imperceptible noise is not. That reading is wrong, and the control is why.
+PSNR constrains how much energy a perturbation carries, not where in the
+frequency plane it sits. Two perturbations can therefore satisfy the matching
+criterion while being structurally unrelated, and measuring the residual
+spectra shows that is what happened. Both tested watermarks put $0.83$--$0.97$
+of their residual power in the lowest radial band. The PSNR-matched controls
+standing in for them put $0.46$ in the highest (\S\ref{sec:spectral}). The
+control was not a weaker watermark; it was closer to the opposite perturbation
+with the same energy budget.
 
-So we built the control the comparison actually needs: payload-free, but
-carrying the watermark's \emph{own} per-image power spectrum, obtained by
-randomising the phase of the watermark's residual. It is verifiably a control
---- the payload is unrecoverable from it (BER $0.49$--$0.51$, chance) --- and
-verifiably matched, on PSNR to within $0.3$\,dB and on SSIM more closely than
-the control it replaces. \textbf{Against it the effect disappears}
+So we built the control the comparison actually needs. It is payload-free but
+carries the watermark's \emph{own} per-image power spectrum, obtained by
+randomising the phase of the watermark's residual. Both properties are checked
+rather than assumed. The payload is unrecoverable from it (BER $0.49$--$0.51$,
+chance), and it matches the watermark on PSNR to within $0.3$\,dB and on SSIM
+more closely than the control it replaces. \textbf{Against it the effect disappears}
 (\S\ref{sec:control-hierarchy}): the watermark--control slope gap on
 EfficientNet-B6 falls from $+0.126$ [$+0.105,+0.146$], which excludes zero, to
 $+0.006$ [$-0.009,+0.021$], which does not. Once the control is adequate, no
 watermark-specific interference is detectable.
 
-What remains is a real but narrower phenomenon: EfficientNet-B6 attenuates
-evidence under high-frequency perturbation specifically. That behaviour does
+What remains is a real but narrower phenomenon: on EfficientNet-B6,
+attenuation increases monotonically with the perturbation's frequency band at
+fixed PSNR (\S\ref{sec:frequency}), and neither watermark produces much
+high-frequency energy. That behaviour does
 not appear on a second, provenance-disclosed detector matched to it on
 baseline AUC (\S\ref{sec:replication}), and a resolution ablation holding
 architecture, training data and head fixed rules out input resolution as the
@@ -143,7 +153,9 @@ and are reported as support, not as further claims.
         detector.
   \item \textbf{The residual phenomenon is checkpoint-specific, and not
         explained by resolution} (\S\ref{sec:replication},
-        \S\ref{sec:mechanism}). EfficientNet-B6's high-frequency sensitivity
+        \S\ref{sec:mechanism}). EfficientNet-B6's frequency-dependent
+        attenuation, measured as a dose-response over three bands at fixed
+        PSNR (\S\ref{sec:frequency}),
         does not appear on a second detector matched to within $0.003$ baseline
         AUC, and a resolution sweep from $224$ to $448$ leaves the
         watermark--control contrast flat at $+0.005$ to $+0.009$, against
@@ -631,17 +643,80 @@ the stronger control is not winning by being a gentler perturbation.
 
 We therefore withdraw the reading that imperceptible noise attenuates detector
 evidence while watermarking does not. The defensible statement is narrower and
-concerns frequency: on this checkpoint, \emph{high-frequency} perturbation
-attenuates evidence, neither tested watermark produces much high-frequency
-energy, and a payload-free perturbation that also avoids it is
-indistinguishable from a watermark. On the ResNet-18 probe one contrast does
+concerns frequency: on this checkpoint attenuation grows with the
+perturbation's frequency band at fixed PSNR (\S\ref{sec:frequency}), neither
+tested watermark produces much high-frequency energy, and a payload-free
+perturbation matched to the watermark's full spectrum is indistinguishable
+from the watermark. On the ResNet-18 probe one contrast does
 exclude zero (RivaGAN, wm$-$spec $+0.029$), which we report; it is small, of
 opposite sign to the EfficientNet-B6 effect, and we draw no mechanism from it.
+
+\subsection{A frequency dose-response, and what it does not explain}
+\label{sec:frequency}
+
+\S\ref{sec:control-hierarchy} shows the apparent effect depends on the
+control's spectrum, but two spectral conditions do not establish a frequency
+response: the same data are consistent with sensitivity to some property
+merely correlated with our high-pass noise. We therefore measured the
+dose-response directly, with payload-free perturbations confined to a single
+radial band, each binary-searched to the watermark's per-image PSNR
+($39.77$ against the watermark's $39.80$), on $400$ further held-out images.
+
+\begin{table}[t]
+\centering
+\caption{Slope against band-limited payload-free perturbation at matched PSNR,
+EfficientNet-B6, $n=400$, $2{,}000$ bootstrap resamples.}
+\label{tab:frequency}
+\footnotesize
+\begin{tabular}{lcc}
+\toprule
+Arm & slope $b$ & 95\% CI \\
+\midrule
+watermark & $0.9733$ & [$0.9576$, $0.9884$] \\
+low band & $0.9075$ & [$0.8781$, $0.9358$] \\
+mid band & $0.8683$ & [$0.8373$, $0.9012$] \\
+high band & $\mathbf{0.8092}$ & [$0.7735$, $0.8438$] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{The dose-response is monotone in frequency.} At fixed PSNR and zero
+payload, attenuation increases as the perturbation moves up in frequency
+($0.908 \to 0.868 \to 0.809$), with the low and high intervals disjoint. This
+is a measured response rather than an inference from the two conditions of
+\S\ref{sec:control-hierarchy}.
+
+\textbf{It does not, however, fully account for the watermark.} The watermark
+attenuates \emph{less} than even the low-band control, and the intervals do
+not overlap ($0.9733$ [$0.958,0.988$] against $0.9075$ [$0.878,0.936$]). A
+watermark that is $82\%$ low-band by power is therefore not simply behaving as
+a low-band perturbation; coarse band membership is too crude a description of
+what matters.
+
+What does track the watermark is the \emph{fidelity} of the spectral match.
+Holding PSNR and payload constant, the control's slope rises monotonically as
+it matches more of the watermark's spectral structure:
+
+\begin{center}
+\footnotesize
+PSNR-only $0.838$ $\to$ band-limited low $0.908$ $\to$
+full spectrum-matched $0.958$ $\to$ watermark $0.964$
+\end{center}
+
+\noindent(the first, third and fourth from \S\ref{sec:control-hierarchy} at
+$n=800$; the second from Table~\ref{tab:frequency} at $n=400$, so the ladder
+mixes two samples and is indicative rather than a single fitted trend). The
+apparent watermark effect shrinks as the control is matched on more of the
+perturbation's structure and is statistically indistinguishable from zero once
+the full per-image spectrum is matched. We stop there: these experiments
+identify spectral structure as the dimension along which the earlier
+comparison was mismatched, and do not establish that spectrum is the complete
+account of this checkpoint's behaviour.
 
 \subsection{Mechanism: resolution is tested and excluded}
 \label{sec:mechanism}
 
-Why does one checkpoint attenuate under high-frequency perturbation and the
+Why does one checkpoint show this frequency-dependent attenuation and the
 other not? The candidate we could isolate is input resolution. Corpus images
 are $256\times256$; EfficientNet-B6 processes at $528$, upsampling and
 preserving fine perturbation, while the probe processes at $224$, downsampling
@@ -944,8 +1019,10 @@ happened to choose.
 \textbf{Reduced: the mechanism was unresolved.} Input resolution is now tested
 and excluded (\S\ref{sec:mechanism}). Architecture, training data and training
 augmentation remain untested, so the mechanism is narrowed to
-``high-frequency sensitivity specific to this checkpoint'' rather than
-identified.
+``frequency-dependent attenuation specific to this checkpoint'' rather than
+identified. \S\ref{sec:frequency} also shows frequency band alone does not
+account for the watermark's own position, so even the frequency account is
+partial.
 
 \textbf{Remains: two detectors.} Two models establish that the phenomenon is
 not universal; they cannot say which population of detectors exhibits it. That
@@ -974,13 +1051,13 @@ identity-clustered resampling is possible. Neither is fixable by analysis.
 \section{Discussion}
 
 \textbf{The control is the experiment.} The substantive finding here is not a
-number about watermarking but a fact about how this class of experiment is
-built. Every arm, detector and estimator was held fixed across
-\S\ref{sec:control-hierarchy}; the only thing that changed was what the
-control was matched on, and the conclusion inverted. A PSNR-matched control is
-the obvious choice, it is what we chose, and it is not sufficient: fixing
-energy leaves the perturbation free to occupy the opposite end of the
-spectrum, and in our case it did.
+number about watermarking. It is a fact about how this class of experiment is
+built. Across \S\ref{sec:control-hierarchy} every arm, detector and estimator
+was held fixed. The only thing that changed was what the control was matched
+on, and the conclusion inverted. A PSNR-matched control is the obvious choice.
+It is what we chose, and it is not sufficient, because fixing energy leaves the
+perturbation free to occupy the opposite end of the spectrum. In our case it
+did.
 
 \textbf{What a null does and does not mean.} We do not detect
 \cite{wu2024watermarksbugs}'s effect once the control is adequate, which is a
@@ -1003,8 +1080,8 @@ confirmatory test already used.
 
 \textbf{One checkpoint is not a detector, and one cell is not a cost model.}
 Two of this paper's corrections came from widening a design that had collapsed
-to a single point: one checkpoint became two and reversed a generality claim;
-one cost triple became sixty-three cells and reversed a decision-risk null.
+to a single point. One checkpoint became two, and a generality claim reversed.
+One cost triple became sixty-three cells, and a decision-risk null reversed.
 Neither widening was expensive. The pattern is worth more than either result.
 
 \section{Conclusion}
@@ -1026,8 +1103,9 @@ estimator unchanged, matching the control's spectrum removes the effect. No
 watermark-specific interference is detectable once the control is adequate.
 
 The residual phenomenon is narrower and belongs to a model rather than to
-detection: EfficientNet-B6 attenuates evidence under high-frequency
-perturbation, a second provenance-disclosed detector matched to within $0.003$
+detection: on EfficientNet-B6 attenuation grows monotonically with the
+perturbation's frequency band at fixed PSNR ($0.908/0.868/0.809$ for
+low/mid/high), a second provenance-disclosed detector matched to within $0.003$
 baseline AUC does not, and a resolution sweep from $224$ to $448$ excludes
 input resolution as the cause while leaving architecture, training data and
 augmentation untested. Three supporting measurements accompany this: both
