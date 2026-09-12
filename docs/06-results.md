@@ -709,3 +709,97 @@ The ρ sweep found nothing at all, which is consistent with everything else in
 this paper about the provenance channel's weak contribution. Neither result
 changes the paper's central claims; both are reported because the experiment
 plan named them and a null result honestly obtained is still a result.
+
+---
+
+# Round 2: new experiments (E7-E11)
+
+Authorised to run new experiments rather than argue the limitations away. Each
+of these targets a specific limitation the previous revision could only state.
+
+## E7 — the control hierarchy: the asymmetry is a spectral artefact
+
+**Targets L7 (PSNR matching is not structural matching).**
+
+`scripts/e7_control_hierarchy.py`. Seven arms per image on 800 held-out `test`
+images at offset 1000 (disjoint from the exploratory 300, the 36-image slice,
+and E4/E5's first 400), 2000 bootstrap resamples over images:
+
+    clean | <scheme> | null[<scheme>] (PSNR-matched) | spec[<scheme>] (PSNR + spectrum-matched)
+
+`spec[]` is built by phase-randomising the watermark's own per-image residual
+(`null_perturbation.match_spectrum_and_psnr`), so it carries the identical
+power spectrum with no payload.
+
+| Detector | Scheme | wm b | PSNR-null b | spec-null b | wm−null | wm−spec |
+| --- | --- | --- | --- | --- | --- | --- |
+| EfficientNet-B6 | dwtDctSvd | 0.9636 | **0.8377** | 0.9581 | **+0.1259** [+0.1052,+0.1455] | +0.0056 [−0.0090,+0.0206] |
+| EfficientNet-B6 | rivaGan | 0.9921 | **0.8553** | 0.9784 | **+0.1368** [+0.1160,+0.1587] | +0.0137 [−0.0004,+0.0274] |
+| ResNet-18 probe | dwtDctSvd | 0.9685 | 0.9736 | 0.9569 | −0.0051 [−0.0232,+0.0139] | +0.0116 [−0.0039,+0.0283] |
+| ResNet-18 probe | rivaGan | 0.9697 | 0.9806 | 0.9403 | −0.0109 [−0.0313,+0.0089] | +0.0294 [+0.0127,+0.0456] |
+
+**The ~0.13 watermark/control gap — the paper's headline effect — disappears
+when the control is matched on spectrum rather than only on PSNR.** On
+EfficientNet-B6, wm−spec includes zero for both schemes while wm−null excludes
+it decisively.
+
+Two verifications, because the conclusion depends on `spec[]` really being a
+control:
+
+- **Payload-free.** Extraction from `spec[]` gives BER 0.5008 (dwtDctSvd) /
+  0.4898 (rivaGan) — chance, matching the PSNR control (0.5047/0.4922), while
+  the watermark decodes at 0.0000/0.0016.
+- **Actually matched.** PSNR within 0.22/0.27 dB of the watermark. SSIM is a
+  *closer* match than the old control: 0.978 vs 0.962, against a watermark at
+  0.986.
+
+## E11 — why: the PSNR-matched control is spectrally inverted
+
+`scripts/e11_spectral_profile.py`, n=100. Fraction of residual power by radial
+frequency band, with payload BER measured in the same run:
+
+| Scheme | Arm | low | mid | high | payload BER |
+| --- | --- | --- | --- | --- | --- |
+| dwtDctSvd | watermark | **0.825** | 0.071 | 0.104 | 0.0022 |
+| dwtDctSvd | PSNR-matched control | 0.143 | 0.396 | **0.461** | 0.5072 |
+| dwtDctSvd | spectrum-matched control | **0.824** | 0.073 | 0.103 | 0.5119 |
+| rivaGan | watermark | **0.967** | 0.024 | 0.008 | 0.0013 |
+| rivaGan | PSNR-matched control | 0.153 | 0.391 | **0.455** | 0.4947 |
+| rivaGan | spectrum-matched control | **0.962** | 0.027 | 0.011 | 0.5194 |
+
+The PSNR-matched control was not a weaker watermark; it was a perturbation
+with roughly the inverse spectral profile that happened to satisfy the
+matching criterion. Both watermarks put 0.83–0.97 of their residual power in
+the low band; their PSNR-matched controls put 0.46 in the high band.
+
+**Consequence for the paper.** The negative claim (no detectable
+watermark-specific interference) survives and is now supported by a far
+stronger control. The mechanism claim must change: EfficientNet-B6 is
+sensitive to *high-frequency* perturbation energy, not to imperceptible
+perturbation generally, and neither tested watermark produces much of it.
+
+## E9 — decision risk over the cost space, not one triple
+
+**Targets L6.** `scripts/e9_cost_surface.py`. 8×8 grid over (c_FN, c_FP) at
+c_R=1; 63 of 64 cells feasible (one has an empty review band by construction).
+Calibrators frozen on the clean calibration half, as before.
+
+| Calibrator / arm | median DRD − clean | worse than clean in | worse by >0.01 |
+| --- | --- | --- | --- |
+| isotonic / null[dwtDctSvd] | +0.0148 | **98%** of cells | 60% |
+| isotonic / null[rivaGan] | +0.0042 | 83% | 44% |
+| isotonic / **rivaGan (watermark)** | **+0.0610** | **100%** | 98% |
+| isotonic / dwtDctSvd | +0.0038 | 70% | 41% |
+| platt / null[dwtDctSvd] | −0.0175 | 8% | 8% |
+| platt / null[rivaGan] | −0.0151 | 11% | 8% |
+
+**This changes a claim.** "Decision risk does not reliably change" was an
+artefact of evaluating at one cost triple. Under isotonic the null arms exceed
+clean decision risk in 83–98% of the feasible cost space. The largest effect
+is the RivaGAN *watermark* arm (100% of cells, median +0.061), which is
+consistent with its +0.649 intercept: a translation moves decisions even where
+attenuation does not. Under Platt the pattern does not hold, as expected from
+its broken clean-arm baseline.
+
+Status: secondary analysis, not pre-registered, and it reuses the same
+validation images as the confirmatory test.
