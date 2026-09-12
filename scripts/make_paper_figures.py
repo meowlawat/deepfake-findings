@@ -168,10 +168,91 @@ def fig_rho_sweep():
     plt.close(fig)
 
 
+def fig_control_hierarchy():
+    """The headline figure: slope per arm, per detector, with bootstrap CIs.
+
+    Reads results/e7_analysis.json. Shows that the watermark/control gap is
+    large against a PSNR-matched control and absent against a spectrum-matched
+    one, which is the paper's central result."""
+    d = json.loads((ROOT / "results/e7_analysis.json").read_text())
+    dets = [k for k in ("effnet", "own") if k in d["detectors"]]
+    schemes = ["dwtDctSvd", "rivaGan"]
+    labels = {"wm": "watermark", "null": "control\n(PSNR-matched)",
+              "spec": "control\n(spectrum-matched)"}
+    colors = {"wm": "#1f77b4", "null": "#d62728", "spec": "#2ca02c"}
+    names = {"effnet": "EfficientNet-B6", "own": "ResNet-18 probe"}
+
+    fig, axes = plt.subplots(1, len(dets), figsize=(4.6 * len(dets), 3.6), sharey=True)
+    if len(dets) == 1:
+        axes = [axes]
+    for ax, det in zip(axes, dets):
+        e = d["detectors"][det]
+        x, ticks = 0, []
+        for scheme in schemes:
+            if scheme not in e["schemes"]:
+                continue
+            r = e["schemes"][scheme]["slope"]
+            for k in ("wm", "null", "spec"):
+                lo, hi = r[k]["ci"]
+                ax.errorbar(x, r[k]["point"],
+                            yerr=[[r[k]["point"] - lo], [hi - r[k]["point"]]],
+                            fmt="o", color=colors[k], capsize=3, ms=5)
+                x += 1
+            ticks.append((x - 2, scheme.replace("dwtDctSvd", "DWT-DCT-SVD").replace("rivaGan", "RivaGAN")))
+            x += 1
+        ax.axhline(1.0, color="gray", ls="--", lw=1)
+        ax.set_xticks([t[0] for t in ticks])
+        ax.set_xticklabels([t[1] for t in ticks], fontsize=9)
+        ax.set_title(f"{names.get(det, det)}  (n={e['n']})", fontsize=10)
+    axes[0].set_ylabel("evidence-transfer slope $b$")
+    handles = [plt.Line2D([], [], color=colors[k], marker="o", ls="", label=labels[k])
+               for k in ("wm", "null", "spec")]
+    handles.append(plt.Line2D([], [], color="gray", ls="--", label="$b=1$ (no change)"))
+    axes[-1].legend(handles=handles, fontsize=7.5, loc="lower right", framealpha=0.95)
+    fig.suptitle("Slope depends on what the control is matched on", fontsize=11)
+    fig.tight_layout(rect=[0, 0, 1, 0.93])
+    fig.savefig(OUT / "fig_control_hierarchy.pdf")
+    plt.close(fig)
+
+
+def fig_spectral_profile():
+    """Why the two controls differ: fraction of residual power by frequency
+    band. Reads results/e11_spectral_profile.json."""
+    d = json.loads((ROOT / "results/e11_spectral_profile.json").read_text())
+    arms = ["watermark", "psnr_matched_control", "spectrum_matched_control"]
+    labels = ["watermark", "control (PSNR-matched)", "control (spectrum-matched)"]
+    colors = ["#1f77b4", "#d62728", "#2ca02c"]
+    schemes = list(d["schemes"])
+
+    fig, axes = plt.subplots(1, len(schemes), figsize=(4.4 * len(schemes), 3.2), sharey=True)
+    if len(schemes) == 1:
+        axes = [axes]
+    w = 0.26
+    for ax, scheme in zip(axes, schemes):
+        xs = np.arange(len(d["bands"]))
+        for j, (arm, lab, col) in enumerate(zip(arms, labels, colors)):
+            m = d["schemes"][scheme][arm]["band_fraction_mean"]
+            ax.bar(xs + (j - 1) * w, m, w, label=lab, color=col)
+        ax.set_xticks(xs)
+        ax.set_xticklabels(d["bands"])
+        ax.set_xlabel("radial frequency band")
+        ax.set_title(scheme.replace("dwtDctSvd", "DWT-DCT-SVD").replace("rivaGan", "RivaGAN"),
+                     fontsize=10)
+    axes[0].set_ylabel("fraction of residual power")
+    axes[0].legend(fontsize=7.5)
+    fig.suptitle(f"The PSNR-matched control inverts the watermark's spectrum (n={d['n']})",
+                 fontsize=10.5)
+    fig.tight_layout(rect=[0, 0, 1, 0.92])
+    fig.savefig(OUT / "fig_spectral_profile.pdf")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     fig_replication()
     fig_ber_area()
     fig_e4_beta4()
     fig_calibration()
     fig_rho_sweep()
+    fig_control_hierarchy()
+    fig_spectral_profile()
     print(f"figures written to {OUT}")
