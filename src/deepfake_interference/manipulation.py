@@ -112,3 +112,67 @@ def inpaint_region(host: np.ndarray, area_fraction: float = 0.18,
         area_fraction=float(mask.mean() / 255.0),
         center=(cx, cy), axes=(a, b),
     )
+
+
+def copy_move_region(host: np.ndarray, area_fraction: float = 0.18,
+                     rng: np.random.Generator | None = None) -> SpliceResult:
+    """Copy an elliptical region from elsewhere in the SAME image over itself.
+
+    Third mechanism on a deliberate axis: the splice introduces foreign pixels,
+    the inpaint reconstructs from context, and copy-move does neither. It
+    relocates the image's own content, so any payload loss is attributable to
+    the carrier being overwritten rather than to alien statistics or to an
+    inpainting prior.
+    """
+    rng = rng or np.random.default_rng(0)
+    h, w = host.shape[:2]
+    target = area_fraction * h * w
+    ratio = 1.3
+    b = max(8, min(int(np.sqrt(target / (np.pi * ratio))), h // 2 - 2))
+    a = max(8, min(int(ratio * b), w // 2 - 2))
+    cx = int(np.clip(w // 2 + rng.integers(-w // 20, w // 20 + 1), a + 1, w - a - 1))
+    cy = int(np.clip(h // 2 + rng.integers(-h // 20, h // 20 + 1), b + 1, h - b - 1))
+    # source patch offset well away from the destination where geometry allows
+    sx = int(np.clip(cx + rng.choice([-1, 1]) * (2 * a), a + 1, w - a - 1))
+    sy = int(np.clip(cy + rng.choice([-1, 1]) * (2 * b), b + 1, h - b - 1))
+
+    mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.ellipse(mask, (cx, cy), (a, b), 0, 0, 360, 255, -1)
+    src = np.roll(host, shift=(cy - sy, cx - sx), axis=(0, 1))
+    out = host.copy()
+    out[mask > 0] = src[mask > 0]
+    return SpliceResult(manipulated=out, area_fraction=float(mask.mean() / 255.0),
+                        center=(cx, cy), axes=(a, b))
+
+
+def local_regenerate_region(host: np.ndarray, area_fraction: float = 0.18,
+                            rng: np.random.Generator | None = None) -> SpliceResult:
+    """Destroy fine structure inside a region while leaving coarse appearance.
+
+    A cheap stand-in for localised re-synthesis: strong blur plus aggressive
+    re-quantisation inside the ellipse removes the high-frequency detail a
+    transform-domain payload rides on, without importing foreign content. We do
+    not claim this reproduces a learned generative edit; it isolates the
+    carrier-destruction axis those edits also act on.
+    """
+    rng = rng or np.random.default_rng(0)
+    h, w = host.shape[:2]
+    target = area_fraction * h * w
+    ratio = 1.3
+    b = max(8, min(int(np.sqrt(target / (np.pi * ratio))), h // 2 - 2))
+    a = max(8, min(int(ratio * b), w // 2 - 2))
+    cx = int(np.clip(w // 2 + rng.integers(-w // 20, w // 20 + 1), a + 1, w - a - 1))
+    cy = int(np.clip(h // 2 + rng.integers(-h // 20, h // 20 + 1), b + 1, h - b - 1))
+
+    mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.ellipse(mask, (cx, cy), (a, b), 0, 0, 360, 255, -1)
+    bgr = cv2.cvtColor(host, cv2.COLOR_RGB2BGR)
+    degraded = cv2.GaussianBlur(bgr, (0, 0), sigmaX=3.0)
+    ok, enc = cv2.imencode(".jpg", degraded, [int(cv2.IMWRITE_JPEG_QUALITY), 25])
+    if ok:
+        degraded = cv2.imdecode(enc, cv2.IMREAD_COLOR)
+    out_bgr = bgr.copy()
+    out_bgr[mask > 0] = degraded[mask > 0]
+    return SpliceResult(manipulated=cv2.cvtColor(out_bgr, cv2.COLOR_BGR2RGB),
+                        area_fraction=float(mask.mean() / 255.0),
+                        center=(cx, cy), axes=(a, b))
