@@ -24,9 +24,13 @@ watermark:
 detectors:
   vit: "Wvolf/ViT_Deepfake_Detection"
   effnet: "Skullly/DeepFake-EN-B6"
-  # Detector with fully disclosed provenance, trained by
-  # scripts/train_own_detector.py on the corpus train split.
+  # Detectors with fully disclosed provenance, trained by
+  # scripts/train_own_detector.py on the corpus train split. All three are
+  # frozen backbone + logistic head at the same n_train, differing only in
+  # architecture family (CNN / modern CNN / transformer) - docs/07.
   own: "own:models/own_detector.json"
+  own_convnext: "own:models/own_detector_convnext-base.json"
+  own_vit: "own:models/own_detector_vit-b16.json"
   floor_auc: 0.80          # docs/03 E0
   leakage_suspicion_auc: 0.97   # docs/04 R14 - report, don't silently celebrate
 

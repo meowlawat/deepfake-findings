@@ -24,3 +24,6 @@ lit/*.pdf
 # disk. A container restart during this work made that risk concrete.
 # data/ stays ignored: 60k PNGs is corpus, regenerable via
 # scripts/materialize_split.py.
+
+# Cached frozen-backbone features (regenerable; large)
+cache/

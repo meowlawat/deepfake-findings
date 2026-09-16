@@ -137,6 +137,10 @@ def main() -> int:
     ap.add_argument("--out", default=None)
     ap.add_argument("--device", default=None)
     ap.add_argument("--batch-size", type=int, default=None)
+    ap.add_argument("--cache-dir", default="cache/features",
+                    help="extracted features are cached here; a re-run with the "
+                         "same backbone/split/n reuses them instead of "
+                         "re-extracting. Pass '' to disable.")
     args = ap.parse_args()
 
     import torch
@@ -151,9 +155,25 @@ def main() -> int:
     paths, labels = collect(Path(args.corpus) / args.train_split, args.limit)
     print(f"backbone={args.backbone} ({model_id})  pooling={pooling}  "
           f"training on {len(paths)} images from split '{args.train_split}' (device={device})")
-    kw = {"batch_size": args.batch_size} if args.batch_size else {}
-    X, y = extract_features(paths, labels, model_id, pooling, device, **kw)
-    print(f"features {X.shape}")
+
+    # Extraction is the expensive step and the head is cheap, so cache the
+    # features: an interrupted or repeated run refits in seconds instead of
+    # re-reading every image through the backbone.
+    cache = (Path(args.cache_dir) /
+             f"{args.backbone}_{args.train_split}_{len(paths)}.npz"
+             if args.cache_dir else None)
+    if cache and cache.exists():
+        d = np.load(cache)
+        X, y = d["X"], d["y"]
+        print(f"features {X.shape} (loaded from {cache})")
+    else:
+        kw = {"batch_size": args.batch_size} if args.batch_size else {}
+        X, y = extract_features(paths, labels, model_id, pooling, device, **kw)
+        print(f"features {X.shape}")
+        if cache:
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            np.savez_compressed(cache, X=X, y=y)
+            print(f"cached to {cache}")
 
     clf = LogisticRegression(max_iter=2000, C=1.0)
     clf.fit(X, y)
