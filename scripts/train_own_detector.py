@@ -7,23 +7,32 @@ chance. A reviewer cannot distinguish "attenuation is a property of
 detectors" from "attenuation is a property of this checkpoint", and no
 amount of further screening fixes that.
 
-So we build one. An ImageNet-pretrained ResNet-18 is used as a *frozen*
-feature extractor and a logistic head is fitted on the corpus's own train
-split. Two properties follow that no public checkpoint offers here:
+So we build these. A pretrained backbone is used as a *frozen* feature
+extractor and a logistic head is fitted on the corpus's own train split.
+Two properties follow that no public checkpoint offers here:
 
-  - **Disclosed provenance.** The backbone's pretraining (ImageNet
-    classification) is public and contains no deepfake corpus; the head is
-    fitted here, on a split we name, with code in this repository.
+  - **Disclosed provenance.** The backbone's pretraining is public and
+    contains no deepfake corpus; the head is fitted here, on a split we
+    name, with code in this repository.
   - **No leakage into evaluation.** The head sees only `train`. Validation
     and test are untouched, so a baseline AUC on those splits is honest by
     construction rather than by a diagnostic that can only fail to detect
     contamination.
 
 The head is deliberately linear. A linear probe on frozen generic features
-is a weak detector, and that is the point: if attenuation appears in both a
-strong purpose-built CNN and a weak linear probe over generic features, it is
-a property of the detection problem rather than of one architecture. If it
-appears in only one, the paper says so.
+is a weak detector, and that is the point: if attenuation appears across a
+strong purpose-built CNN AND several architecturally distinct linear probes
+over generic features, it is a property of the detection problem rather than
+of one architecture. If it appears in only one, the paper says so.
+
+Backbones registered below (see docs/07): microsoft/resnet-18 (existing
+panel entry, "own"), facebook/convnext-base-224-22k-1k (modern CNN family),
+google/vit-base-patch16-224-in21k (transformer family, CLS-token features --
+see extract_features for why CLS rather than pooler_output is used for ViT).
+Fine-tuning is deliberately never offered here: end-to-end backprop would let
+a backbone memorize this corpus's pixel statistics, breaking the "generic
+features" argument the disclosed panel depends on -- see docs/07's rejected
+scope.
 """
 from __future__ import annotations
 
@@ -38,43 +47,73 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 import numpy as np
 
 
-BACKBONE_ID = "microsoft/resnet-18"
+# name -> (HF model id, pooling strategy, human-readable provenance note)
+BACKBONES = {
+    "resnet18": (
+        "microsoft/resnet-18", "pooler",
+        "ImageNet-1k classification pretraining (ResNet-18), contains no deepfake corpus.",
+    ),
+    "convnext-base": (
+        "facebook/convnext-base-224-22k-1k", "pooler",
+        "ImageNet-21k->1k classification pretraining (ConvNeXt-Base), contains no deepfake corpus.",
+    ),
+    "vit-b16": (
+        "google/vit-base-patch16-224-in21k", "cls",
+        "ImageNet-21k pretraining, no classification fine-tuning (ViT-B/16), contains no deepfake corpus.",
+    ),
+}
 
 
-def build_backbone(device: str):
-    """ImageNet ResNet-18 via the HF hub rather than torch.hub.
+def build_backbone(model_id: str, device: str):
+    """Any of the registered backbones via the HF hub.
 
     torch.hub's download of resnet18-f37072fd.pth fails a hash check through
     this environment's outbound proxy (the bytes that arrive are not the
-    bytes upstream signed). The HF hub path is already proven to work here,
-    and `microsoft/resnet-18` is the same ImageNet-pretrained architecture,
-    so the provenance argument is unchanged: ImageNet classification
-    pretraining, containing no deepfake corpus.
+    bytes upstream signed), which is why every backbone here goes through
+    the HF hub rather than torch.hub -- already proven to work in this
+    sandbox. Same architecture, same provenance argument either way.
     """
     from transformers import AutoImageProcessor, AutoModel
 
-    processor = AutoImageProcessor.from_pretrained(BACKBONE_ID)
-    model = AutoModel.from_pretrained(BACKBONE_ID)
+    processor = AutoImageProcessor.from_pretrained(model_id)
+    model = AutoModel.from_pretrained(model_id)
     model.eval().to(device)
     return model, processor
 
 
-def extract_features(paths, labels, device, batch_size=64, log_every=2000):
+def pooled_features(out, pooling: str):
+    """pooler: global-pool output HF already provides (ResNet/ConvNeXt --
+    plain spatial average pooling, nothing separately trained). cls: the
+    [CLS] token from the last hidden state, used for ViT instead of
+    pooler_output because a ViT's HF pooler is a Dense+Tanh layer that is not
+    reliably pretrained for every checkpoint on the hub; the CLS token itself
+    is the representation actually trained by the backbone."""
+    if pooling == "pooler":
+        feat = out.pooler_output
+    elif pooling == "cls":
+        feat = out.last_hidden_state[:, 0]
+    else:
+        raise ValueError(f"unknown pooling strategy: {pooling}")
+    return feat.reshape(feat.shape[0], -1)
+
+
+def extract_features(paths, labels, model_id, pooling, device, batch_size=32, log_every=1000):
     import torch
     from PIL import Image
 
-    model, processor = build_backbone(device)
+    model, processor = build_backbone(model_id, device)
     feats, t0 = [], time.time()
     with torch.no_grad():
         for start in range(0, len(paths), batch_size):
             imgs = [Image.open(p).convert("RGB") for p in paths[start:start + batch_size]]
             inputs = processor(images=imgs, return_tensors="pt")
             inputs = {k: v.to(device) for k, v in inputs.items()}
-            out = model(**inputs).pooler_output      # (B, 512, 1, 1)
-            feats.append(out.reshape(out.shape[0], -1).cpu().numpy())
+            out = model(**inputs)
+            feats.append(pooled_features(out, pooling).cpu().numpy())
             done = start + len(imgs)
-            if done % log_every < batch_size:
-                print(f"  {done}/{len(paths)}  {done/max(1e-9,time.time()-t0):.1f} img/s", flush=True)
+            if done % log_every < batch_size or done == len(paths):
+                rate = done / max(1e-9, time.time() - t0)
+                print(f"  {done}/{len(paths)}  {rate:.2f} img/s", flush=True)
     return np.concatenate(feats), np.asarray(labels)
 
 
@@ -91,22 +130,29 @@ def collect(split_dir: Path, limit: int | None):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--backbone", choices=sorted(BACKBONES), default="resnet18")
     ap.add_argument("--corpus", default="data/corpus")
     ap.add_argument("--train-split", default="train")
     ap.add_argument("--limit", type=int, default=None, help="cap TRAIN images (balanced)")
-    ap.add_argument("--out", default="models/own_detector.json")
+    ap.add_argument("--out", default=None)
     ap.add_argument("--device", default=None)
+    ap.add_argument("--batch-size", type=int, default=None)
     args = ap.parse_args()
 
     import torch
     from sklearn.linear_model import LogisticRegression
 
+    model_id, pooling, provenance = BACKBONES[args.backbone]
+    out_path = args.out or f"models/own_detector_{args.backbone}.json"
+
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
     torch.set_num_threads(4)
 
     paths, labels = collect(Path(args.corpus) / args.train_split, args.limit)
-    print(f"training on {len(paths)} images from split '{args.train_split}' (device={device})")
-    X, y = extract_features(paths, labels, device)
+    print(f"backbone={args.backbone} ({model_id})  pooling={pooling}  "
+          f"training on {len(paths)} images from split '{args.train_split}' (device={device})")
+    kw = {"batch_size": args.batch_size} if args.batch_size else {}
+    X, y = extract_features(paths, labels, model_id, pooling, device, **kw)
     print(f"features {X.shape}")
 
     clf = LogisticRegression(max_iter=2000, C=1.0)
@@ -114,22 +160,24 @@ def main() -> int:
     train_auc = float(np.mean((clf.predict(X) == y)))
     print(f"train accuracy (in-sample, NOT a result): {train_auc:.4f}")
 
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_text(json.dumps({
-        "backbone": BACKBONE_ID + " (ImageNet ResNet-18), frozen, pooler_output",
-        "head": "sklearn LogisticRegression(C=1.0, max_iter=2000) on 512-d features",
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    Path(out_path).write_text(json.dumps({
+        "backbone_key": args.backbone,
+        "backbone_id": model_id,
+        "pooling": pooling,
+        "backbone": f"{model_id}, frozen, {pooling} features",
+        "head": f"sklearn LogisticRegression(C=1.0, max_iter=2000) on {X.shape[1]}-d features",
         "trained_on_split": args.train_split,
         "n_train": len(paths),
         "coef": clf.coef_[0].tolist(),
         "intercept": float(clf.intercept_[0]),
         "in_sample_accuracy": train_auc,
         "provenance_note": (
-            "Backbone pretraining is ImageNet classification, which contains no "
-            "deepfake corpus. The head was fitted here on the named split only. "
+            f"{provenance} The head was fitted here on the named split only. "
             "Validation and test were never seen during fitting, so baseline AUC "
             "on those splits is honest by construction."),
     }, indent=2))
-    print(f"written to {args.out}")
+    print(f"written to {out_path}")
     return 0
 
 

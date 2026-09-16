@@ -143,7 +143,11 @@ class OwnDetector:
         spec = json.loads(Path(model_path).read_text())
         self.coef = np.asarray(spec["coef"], dtype=np.float32)
         self.intercept = float(spec["intercept"])
-        self.backbone_id = spec["backbone"].split(" ")[0]
+        # backbone_id/pooling are explicit as of scripts/train_own_detector.py's
+        # multi-backbone generalisation (docs/07); older own_detector.json files
+        # predate those fields and only ever used the ResNet-18/pooler_output path.
+        self.backbone_id = spec.get("backbone_id", spec["backbone"].split(",")[0].split(" ")[0])
+        self.pooling = spec.get("pooling", "pooler")
         self.model_id = f"own:{self.backbone_id}"
         self._device = device
         self._model = None
@@ -165,6 +169,13 @@ class OwnDetector:
         self._load()
         return 32 if self._device == "cuda" else 16
 
+    def _pooled(self, out):
+        if self.pooling == "cls":
+            feat = out.last_hidden_state[:, 0]
+        else:
+            feat = out.pooler_output
+        return feat.reshape(feat.shape[0], -1)
+
     def score_batch(self, images: list[np.ndarray], batch_size: int | None = None) -> list[DetectorResult]:
         self._load()
         if batch_size is None:
@@ -175,8 +186,8 @@ class OwnDetector:
             inputs = self._processor(images=chunk, return_tensors="pt")
             inputs = {k: v.to(self._device) for k, v in inputs.items()}
             with self._torch.no_grad():
-                pooled = self._model(**inputs).pooler_output
-            feats = pooled.reshape(pooled.shape[0], -1).cpu().numpy()
+                model_out = self._model(**inputs)
+            feats = self._pooled(model_out).cpu().numpy()
             logits = feats @ self.coef + self.intercept   # log-odds of "fake"
             for v in logits:
                 out.append(DetectorResult(v=float(v), logit_fake=float(v) / 2, logit_real=-float(v) / 2))
