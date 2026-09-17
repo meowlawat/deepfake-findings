@@ -1,0 +1,70 @@
+{
+  "e0": [
+    {
+      "split": "test",
+      "detector": "effnet",
+      "n": 20000,
+      "baseline_auc": 0.8699003750000001,
+      "status": "PASS"
+    },
+    {
+      "split": "train",
+      "detector": "effnet",
+      "n": 20000,
+      "baseline_auc": 0.8697380000000001,
+      "status": "PASS"
+    },
+    {
+      "split": "validation",
+      "detector": "effnet",
+      "n": 20000,
+      "baseline_auc": 0.8732972999999999,
+      "status": "PASS"
+    }
+  ],
+  "leakage": [
+    {
+      "detector": "effnet",
+      "auc_train": 0.8697380000000001,
+      "auc_held_out": 0.8699003750000001,
+      "held_out_split": "test",
+      "gap": -0.00016237499999993688,
+      "reading": "no substantial train/test gap - weak evidence AGAINST train-split contamination, not proof of its absence"
+    }
+  ],
+  "interference": [
+    {
+      "split": "validation",
+      "detector": "effnet",
+      "scheme": "dwtDctSvd",
+      "n": 20000,
+      "delta_auc_net": {
+        "point": 0.004941840000000086,
+        "lo": 0.0031925067896331426,
+        "hi": 0.006632708049968049
+      },
+      "delta_mu_net": {
+        "point": 0.8373379289005793,
+        "lo": 0.807111359360818,
+        "hi": 0.8666618725122524
+      }
+    },
+    {
+      "split": "validation",
+      "detector": "effnet",
+      "scheme": "rivaGan",
+      "n": 20000,
+      "delta_auc_net": {
+        "point": -0.0050833299999999415,
+        "lo": -0.0071299695042233765,
+        "hi": -0.003309780280890535
+      },
+      "delta_mu_net": {
+        "point": 1.3530325322744177,
+        "lo": 1.3169035630608752,
+        "hi": 1.386461346185829
+      }
+    }
+  ],
+  "n_records": 140000
+}
