@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "Spectral Confounding in Watermark--Detector Interference: PSNR-Matched Controls Are Not Sufficient"
+authors:
+  - given-names: Hardik
+    affiliation: "Indian Institute of Technology Patna; Vivekananda Institute of Professional Studies -- TC"
+  - given-names: Yuv
+    family-names: Jindal
+    affiliation: "Vivekananda Institute of Professional Studies -- TC"
+date-released: 2026-09-17
+repository-code: "https://github.com/meowlawat/deepfake-findings"
+license: MIT
