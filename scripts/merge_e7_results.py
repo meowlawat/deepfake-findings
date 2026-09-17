@@ -4,15 +4,18 @@
 e7_control_hierarchy.py's resumability marks a chunk "done" by filename alone
 (docs/07): it has no notion of which detectors populated that chunk, so
 pointing a second run with new detectors at the same --out-dir would see all
-16 chunks already on disk and skip every one of them, writing nothing. So new
+existing chunks already on disk and skip every one, writing nothing. So new
 detectors are scored into their own directory (same --split/--offset/--limit,
-hence identical image ordering and chunk boundaries) and merged here rather
-than appended in place.
+hence the identical image population) and merged here rather than appended
+in place.
 
-Verifies before merging, not after, that both directories actually cover the
-same images: a merge across two different slices would silently produce a
-"panel" whose rows were never scored on the same population, which is exactly
-the comparability failure this whole panel expansion exists to avoid.
+Merging is keyed on image index, not on chunk filename. Two directories can
+legitimately use different --chunk-size values (a resharded or restarted run
+need not reproduce the original's chunk boundaries) and still cover the same
+population -- requiring identical chunk_NNNNN.json boundaries would reject a
+merge that is actually valid, so the real invariant checked here is "every
+directory covers exactly the same set of image indices," and the output is
+written as a single chunk covering all of them.
 """
 from __future__ import annotations
 
@@ -22,12 +25,14 @@ import json
 from pathlib import Path
 
 
-def load_dir(d: str):
-    chunks = {}
+def load_records(d: str):
+    records, quality = [], None
     for f in sorted(glob.glob(f"{d}/chunk_*.json")):
-        idx = int(Path(f).stem.split("_")[-1])
-        chunks[idx] = json.loads(Path(f).read_text())
-    return chunks
+        c = json.loads(Path(f).read_text())
+        records += c["records"]
+        if quality is None:
+            quality = c.get("quality", [])  # identical across dirs for the same slice
+    return records, quality
 
 
 def main() -> int:
@@ -37,38 +42,44 @@ def main() -> int:
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
-    per_dir = [load_dir(d) for d in args.dirs]
-    chunk_ids = set(per_dir[0])
-    for d, chunks in zip(args.dirs, per_dir):
-        if set(chunks) != chunk_ids:
-            raise SystemExit(f"chunk id mismatch: {args.dirs[0]} has {sorted(chunk_ids)}, "
-                             f"{d} has {sorted(chunks)} -- not the same slice, refusing to merge")
+    per_dir = [load_records(d) for d in args.dirs]
+    idx_sets = [{r["idx"] for r in records} for records, _ in per_dir]
+    base = idx_sets[0]
+    for d, idxs in zip(args.dirs, idx_sets):
+        if idxs != base:
+            missing = base - idxs
+            extra = idxs - base
+            raise SystemExit(
+                f"{d} does not cover the same image indices as {args.dirs[0]} -- "
+                f"missing {len(missing)}, extra {len(extra)} -- refusing to merge "
+                f"results that were not scored on the same population")
+
+    # detector collision check: merging two dirs that scored the SAME detector
+    # would silently duplicate that detector's rows in every downstream mean/
+    # bootstrap, so refuse rather than let it happen quietly.
+    det_by_dir = []
+    for d, (records, _) in zip(args.dirs, per_dir):
+        dets = {r["detector"] for r in records}
+        det_by_dir.append(dets)
+    for i in range(len(det_by_dir)):
+        for j in range(i + 1, len(det_by_dir)):
+            overlap = det_by_dir[i] & det_by_dir[j]
+            if overlap:
+                raise SystemExit(
+                    f"{args.dirs[i]} and {args.dirs[j]} both scored detector(s) "
+                    f"{sorted(overlap)} -- refusing to merge duplicate detector rows")
+
+    all_records = [r for records, _ in per_dir for r in records]
+    all_quality = per_dir[0][1]  # identical across dirs (same images, same seeds)
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    seen_idx_per_chunk = {}
-    for cid in sorted(chunk_ids):
-        merged_records, merged_quality = [], None
-        for d, chunks in zip(args.dirs, per_dir):
-            c = chunks[cid]
-            # sanity: every directory must agree on which image indices this
-            # chunk covers, or "same slice" is false despite matching chunk ids
-            idxs = sorted({r["idx"] for r in c["records"]})
-            seen_idx_per_chunk.setdefault(cid, idxs)
-            if idxs != seen_idx_per_chunk[cid]:
-                raise SystemExit(f"chunk {cid}: {d} covers different image indices "
-                                 f"than the first directory -- refusing to merge")
-            merged_records += c["records"]
-            if merged_quality is None:
-                merged_quality = c.get("quality", [])  # identical across dirs; keep once
-        (out_dir / f"chunk_{cid:05d}.json").write_text(
-            json.dumps({"records": merged_records, "quality": merged_quality}))
+    (out_dir / "chunk_00000.json").write_text(
+        json.dumps({"records": all_records, "quality": all_quality}))
 
-    n_detectors = len({r["detector"] for c in per_dir[0].values() for r in c["records"]})
-    total_det = sum(len({r["detector"] for c in chunks.values() for r in c["records"]})
-                    for chunks in per_dir)
-    print(f"merged {len(chunk_ids)} chunks from {len(args.dirs)} directories "
-          f"({total_det} detector-slices total) -> {out_dir}")
+    all_dets = sorted(set().union(*det_by_dir))
+    print(f"merged {len(args.dirs)} directories, {len(base)} images, "
+          f"detectors={all_dets} -> {out_dir}/chunk_00000.json")
     return 0
 
 
