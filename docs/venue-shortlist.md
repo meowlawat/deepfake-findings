@@ -58,14 +58,23 @@ research didn't have, and they change the compression conclusion below:
   previously stated as a requirement anywhere in this project's documentation.
 - **Dual-submission clause**, quoted exactly: "Submissions must not substantially
   overlap with papers that have been published or that are simultaneously submitted to
-  a journal or a conference." This is silent on preprint servers specifically. ACM's
-  general publications policy is well-documented elsewhere (and corroborated by
-  several ACM conferences' own author-instructions pages checked this session) as
-  explicitly excepting arXiv/preprint postings from counting as prior publication —
-  but the ACM policy page itself (`acm.org/publications/policies/simultaneous-
-  submissions`) returned HTTP 403 when fetched directly in this session, so that
-  specific claim rests on secondary-source corroboration, not a primary-source read,
-  and should be re-confirmed before relying on it.
+  a journal or a conference." This is silent on preprint servers specifically.
+  `acm.org` is confirmed **site-wide blocked** to automated fetches (403 on both the
+  specific policy page and its parent index; the Wayback Machine is also blocked at
+  the tool level) — not a page-specific gap, so retrying acm.org directly won't help.
+  The strongest available evidence instead: two ACM-sponsored conferences' own
+  author-instructions pages, fetched directly (not search snippets) in a follow-up
+  session — SIGCOMM 2025 quotes the ACM policy verbatim ("does not consider technical
+  reports (including arXiv) to be concurrent publication or submission") and links
+  straight to the same `acm.org/publications/policies/simultaneous-submissions` page
+  this audit couldn't render; ICS 2025 independently confirms arXiv-posted work may
+  still be submitted. Two independent sources agreeing, each citing the primary page
+  directly, is about as strong as this audit can get without a human browser session
+  on acm.org. IH&MMSec's own CFP doesn't mention arXiv either way, so the inference
+  that it follows the general ACM rule is reasonable but not IH&MMSec-specific written
+  confirmation — email the program chairs (Scott Craver, Shan Jia, Chau-Wai Wong, per
+  the 2025 CFP) if certainty is needed before relying on this for a submission
+  decision. Full detail in `E:\deepfake-findings-arxiv-package\SUBMISSION-CHECKLIST.md`.
 - **2025 schedule** (the most recent full CFP read in full): submission site opened
   Jan 10, deadline Feb 14, notification Apr 12, workshop Jun 18-20. Consistent with
   the 2026 edition's Feb 16 deadline / Jun 17-19 workshop found earlier — a genuine
