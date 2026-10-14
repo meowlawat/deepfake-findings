@@ -1,7 +1,7 @@
 # Conference readiness audit
 
 Performed 2026-10-14 against `E:\deepfake-findings`, `main`, starting commit `041dfea`.
-Scope: `paper/main.tex` (1269 lines, read in full), `paper/refs.bib` (21 entries),
+Scope: `paper/main.tex` (1270 lines, read in full), `paper/refs.bib` (21 entries),
 `paper/figures/` (7 files, 5 referenced), the result artifacts in `results/`, and the
 compiled `paper/main.pdf`. This document reports what was checked, what was changed and
 why, what was deliberately left alone, and a verdict. It does not repeat
