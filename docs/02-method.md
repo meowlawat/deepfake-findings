@@ -13,8 +13,8 @@ deepfake, near 0 means authentic.**
 | `x̃ = E(x, m, k)` | watermarked media under key material `k` |
 | `T` | channel transform: compression, resize, crop, colour shift, re-encode |
 | `D` | deepfake manipulation (face swap, reenactment, diffusion edit) |
-| `W ∈ {0,1}` | watermark presence indicator (0 = Legacy Media Bypass path) |
-| `S` | watermark scheme identity, when `W = 1` |
+| `W ∈ {0,1}` | watermark presence indicator (0 = Legacy Media Bypass path). **Observable, not inferred** — `W = 1` iff the payload's signature verifies (§2.1) |
+| `S` | watermark scheme identity, when `W = 1`. Includes the null-perturbation control arm `S = ∅` (§3.1) |
 | `b` | measured bit error rate of the recovered payload |
 | `V ∈ ℝ` | passive detector score — **raw logit, not softmax probability** |
 | `Y ∈ {0,1}` | ground truth, 1 = manipulated |
@@ -58,6 +58,27 @@ Properties that matter:
   robustness weakness of any given scheme show up *as reduced evidence strength*
   rather than as silent corruption of the score.
 
+**The `p_0` selection problem — an inference-time dependency, stated not hidden.**
+Per-transform-class `p_0` presumes the transform class is *known* at scoring time.
+In evaluation it is, because we apply `T` ourselves. In deployment it is not: a
+file arrives having been through an unknown channel. Three honest resolutions,
+and v1 takes the third:
+
+1. Marginalise: `p(k_e | H_P) = Σ_t π(t) · Binomial(k_e; L, p_0(t))` over a prior
+   `π` on transform classes. Correct, but requires a deployment-specific `π`.
+2. Infer the transform class first, which imports a second classifier and its
+   errors into the provenance path.
+3. **Pooled `p_0`**, one value per scheme across all transform classes, and report
+   the cost. This is what v1 uses. The per-transform values are reported alongside
+   as an *oracle-informed upper bound* on how much sharper `z_P` could be, which
+   makes the gap between pooled and oracle a measured quantity rather than an
+   unstated assumption.
+
+Whichever is used, the claim in the bullet above that `p_0` is "*not* assumed"
+holds only for the estimation of `p_0`; **which** `p_0` applies to a given item is
+a modelling choice, and pretending otherwise would smuggle an assumption back in
+through the side door.
+
 `z_P` is defined only when `W = 1`. When `W = 0` it is **missing, not zero** —
 §4 treats this properly, because conflating the two is one of the concrete flaws
 in the original design.
@@ -78,6 +99,19 @@ which a symmetric cipher does not. AES is retained only where the payload itself
 must be confidential, and the key-distribution model is stated explicitly rather
 than assumed.
 
+**The signature also makes `W` identifiable, which the fusion needs.** Without it,
+"is this watermarked?" would be answered by thresholding BER — but `z_P` is *also*
+a function of BER, so `W` and the provenance evidence would be two readings of one
+measurement, and `β₁` and `β₃` in §4 would be entangled by construction. Signature
+verification breaks that: it is a test whose false-accept rate is ~2^-128 and
+which is **independent of `b`**. `W` becomes genuinely observed rather than
+inferred, and `F2`/`F3` are identifiable.
+
+This upgrades §2.1 from a security fix into a load-bearing part of the method.
+Its *forgery-resistance* still awaits the overwrite-attack evaluation deferred in
+`docs/03` §6; its *identifiability* role needs no experiment, only a correct
+argument.
+
 ## 3. Passive evidence and the interference it carries
 
 `V = f_θ(T(D(x̃)))` — the detector sees watermarked pixels. Published work
@@ -94,6 +128,42 @@ and class `y`, the **interference shift** and **discriminative interference**:
 `Δ_μ ≠ 0` is a location shift, `Δ_σ ≠ 1` a scale change; either breaks a fusion
 calibrated on unwatermarked data. `Δ_AUC < 0` is the effect Wu et al. report.
 These three quantities are the paper's primary measurements — Experiment E1.
+
+### 3.1 The null-perturbation control (`S = ∅`)
+
+A bare `Δ_AUC < 0` does **not** establish interference. It is equally consistent
+with two hypotheses:
+
+- **H_interference** — the watermark's *structure* overlaps the forgery cues the
+  detector relies on. This is the paper's claim, and Wu et al.'s.
+- **H_brittle** — the detector degrades under *any* imperceptible perturbation,
+  and a watermark is merely one instance. Nothing about watermarking specifically.
+
+H_brittle is the more likely null in this setup, because v1's detectors are
+zero-shot and were trained on clean images: watermarking is an unseen distribution
+shift regardless of what the watermark encodes. A design that cannot separate these
+two is not measuring what the paper says it measures, and this is the first
+objection a reviewer will raise.
+
+**Control.** Add a third level to `S`: a payload-free perturbation `∅`, drawn as
+random noise (or a random DCT-domain perturbation) whose energy is tuned per image
+so that PSNR and SSIM match the watermarked arm within a stated tolerance. It is a
+watermark in every respect the detector can see *except* that it carries no
+structured payload. Then report
+
+```
+Δ_AUC_net(s)  =  Δ_AUC(s)  −  Δ_AUC(∅)
+```
+
+| Observation | Reading |
+| --- | --- |
+| `Δ_AUC(s) ≈ Δ_AUC(∅)` | No watermark-specific interference. The reported effect is generic perturbation brittleness — a **sharper negative result** than the field currently has, and still publishable (see `docs/04` R1's fallback framing) |
+| `Δ_AUC(s) ≪ Δ_AUC(∅)` | Structured interference beyond energy alone. The paper's claim, now defended against its main objection |
+
+`Δ_AUC_net`, not `Δ_AUC`, is therefore the headline quantity of E1, and the control
+runs **inside** the go/no-go gate rather than as an extension. The matching
+machinery already exists — PSNR/SSIM are computed for the T5 imperceptibility
+controls, so the marginal cost is hours, not days.
 
 ## 4. Fusion models
 
@@ -147,6 +217,21 @@ plausible one — `c_R = 1`, `c_FP = 20`, `c_FN = 100` — yields `τ_lo = 0.01`
 `τ_hi = 0.95`, a far wider review band. The constants were never the problem;
 the absence of a model behind them was. With the model stated, "dynamic
 thresholding" becomes literally true: `τ` moves with the deployment's costs.
+
+**But a wider band is not automatically a better one.** `τ_lo = 0.01`,
+`τ_hi = 0.95` routes everything between those bounds to a human, which on a
+realistic score distribution is most of the traffic — a system that abstains on
+the large majority of its inputs has not automated much. The cost model is
+therefore incomplete on its own: it prices errors but not reviewer capacity,
+which in any real deployment is the binding constraint.
+
+So the operational framing inverts. Rather than deriving `τ` from costs and
+discovering the coverage after the fact, **fix coverage at what review capacity can
+absorb and report the risk that buys** — which is exactly what E3's selective risk
+at coverage {0.8, 0.9, 0.95} measures. Chow's rule remains the right derivation of
+*where* the thresholds go for a given cost model; the coverage constraint decides
+*which* cost models are deployable at all. Both are reported, and any cost model
+quoted in the paper carries its realised coverage next to it.
 
 **The load-bearing dependency.** Chow's rule is optimal *only if `y_hat` is
 calibrated*. If interference miscalibrates `y_hat` on watermarked media, the

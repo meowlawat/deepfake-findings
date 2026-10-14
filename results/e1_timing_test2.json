@@ -1,0 +1,63 @@
+{
+  "e0": {
+    "vit": {
+      "baseline_auc": 0.5,
+      "n": 20,
+      "status": "FAIL (below floor)"
+    },
+    "effnet": {
+      "baseline_auc": 0.9400000000000001,
+      "n": 20,
+      "status": "PASS"
+    }
+  },
+  "e0_passed": false,
+  "rows": [
+    {
+      "detector": "vit",
+      "scheme": "dwtDctSvd",
+      "delta_mu": 0.24460166990757015,
+      "delta_sigma": 1.0104442628085077,
+      "delta_auc": -0.019999999999999962,
+      "delta_auc_null": 0.010000000000000009,
+      "delta_auc_net": -0.02999999999999997,
+      "n_clean": 20,
+      "n_scheme": 20
+    },
+    {
+      "detector": "vit",
+      "scheme": "rivaGan",
+      "delta_mu": -0.24513677954673763,
+      "delta_sigma": 0.9595277629370104,
+      "delta_auc": -0.039999999999999925,
+      "delta_auc_null": -0.010000000000000009,
+      "delta_auc_net": -0.029999999999999916,
+      "n_clean": 20,
+      "n_scheme": 20
+    },
+    {
+      "detector": "effnet",
+      "scheme": "dwtDctSvd",
+      "delta_mu": 0.24409105330705572,
+      "delta_sigma": 1.0275065539894703,
+      "delta_auc": 0.0,
+      "delta_auc_null": -0.010000000000000009,
+      "delta_auc_net": 0.010000000000000009,
+      "n_clean": 20,
+      "n_scheme": 20
+    },
+    {
+      "detector": "effnet",
+      "scheme": "rivaGan",
+      "delta_mu": 0.6949049629271027,
+      "delta_sigma": 1.02166854144153,
+      "delta_auc": 0.0,
+      "delta_auc_null": -0.01000000000000012,
+      "delta_auc_net": 0.01000000000000012,
+      "n_clean": 20,
+      "n_scheme": 20
+    }
+  ],
+  "gate_passed": false,
+  "gate_message": "E0 floor check failed - see e0 block; E1 not evaluated on a detector that fails its own floor"
+}

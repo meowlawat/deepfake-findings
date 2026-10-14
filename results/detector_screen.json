@@ -1,0 +1,38 @@
+[
+  {
+    "model_id": "Wvolf/ViT_Deepfake_Detection",
+    "auc": 0.5364888888888888,
+    "n": 300,
+    "status": "FAIL (< 0.8)"
+  },
+  {
+    "model_id": "Skullly/DeepFake-EN-B6",
+    "auc": 0.8951555555555556,
+    "n": 300,
+    "status": "PASS"
+  },
+  {
+    "model_id": "dima806/deepfake_vs_real_image_detection",
+    "auc": 0.5296444444444445,
+    "n": 300,
+    "status": "FAIL (< 0.8)"
+  },
+  {
+    "model_id": "prithivMLmods/Deep-Fake-Detector-v2-Model",
+    "auc": 0.5299111111111111,
+    "n": 300,
+    "status": "FAIL (< 0.8)"
+  },
+  {
+    "model_id": "Hemg/Deepfake-Detection",
+    "auc": 0.4576444444444444,
+    "n": 300,
+    "status": "FAIL (< 0.8)"
+  },
+  {
+    "model_id": "DaMsTaR/Detecto-DeepFake_Image_Detector",
+    "auc": 0.5364888888888888,
+    "n": 300,
+    "status": "FAIL (< 0.8)"
+  }
+]

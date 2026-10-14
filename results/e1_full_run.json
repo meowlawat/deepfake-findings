@@ -1,0 +1,63 @@
+{
+  "e0": {
+    "vit": {
+      "baseline_auc": 0.5364888888888888,
+      "n": 300,
+      "status": "FAIL (below floor)"
+    },
+    "effnet": {
+      "baseline_auc": 0.8951555555555556,
+      "n": 300,
+      "status": "PASS"
+    }
+  },
+  "e0_passed": false,
+  "rows": [
+    {
+      "detector": "vit",
+      "scheme": "dwtDctSvd",
+      "delta_mu": 0.018780036433405922,
+      "delta_sigma": 1.0054789158532182,
+      "delta_auc": 0.016177777777777846,
+      "delta_auc_null": -0.002177777777777723,
+      "delta_auc_net": 0.01835555555555557,
+      "n_clean": 300,
+      "n_scheme": 300
+    },
+    {
+      "detector": "vit",
+      "scheme": "rivaGan",
+      "delta_mu": -0.5411194754671306,
+      "delta_sigma": 0.9917233104998361,
+      "delta_auc": 0.0024000000000000687,
+      "delta_auc_null": -0.004088888888888809,
+      "delta_auc_net": 0.006488888888888877,
+      "n_clean": 300,
+      "n_scheme": 300
+    },
+    {
+      "detector": "effnet",
+      "scheme": "dwtDctSvd",
+      "delta_mu": -0.05418058755031474,
+      "delta_sigma": 0.9827584473382969,
+      "delta_auc": 0.0015111111111111297,
+      "delta_auc_null": 0.000888888888888828,
+      "delta_auc_net": 0.0006222222222223017,
+      "n_clean": 300,
+      "n_scheme": 300
+    },
+    {
+      "detector": "effnet",
+      "scheme": "rivaGan",
+      "delta_mu": 0.6789135043423933,
+      "delta_sigma": 1.0025063564467145,
+      "delta_auc": -0.015866666666666807,
+      "delta_auc_null": -0.002488888888888874,
+      "delta_auc_net": -0.013377777777777933,
+      "n_clean": 300,
+      "n_scheme": 300
+    }
+  ],
+  "gate_passed": false,
+  "gate_message": "E0 floor check failed - see e0 block; E1 not evaluated on a detector that fails its own floor"
+}

@@ -1,0 +1,26 @@
+{
+ "split": "test",
+ "offset": 1000,
+ "n": 800,
+ "floor_auc": 0.8,
+ "detectors": {
+  "own": {
+   "model": "own:models/own_detector.json",
+   "baseline_auc": 0.8582125,
+   "clears_floor": true,
+   "seconds": 16.8
+  },
+  "own_convnext": {
+   "model": "own:models/own_detector_convnext-base.json",
+   "baseline_auc": 0.98663125,
+   "clears_floor": true,
+   "seconds": 70.2
+  },
+  "own_vit": {
+   "model": "own:models/own_detector_vit-b16.json",
+   "baseline_auc": 0.97254375,
+   "clears_floor": true,
+   "seconds": 69.7
+  }
+ }
+}
