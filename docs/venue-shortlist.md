@@ -40,6 +40,38 @@ Feb-Apr 2027; IH&MMSec, following its Feb-deadline pattern, likely opens a CFP a
 Sep-Nov 2026, which is close to now and worth checking again soon) is a real, trackable
 plan, not an indefinite wait.
 
+## Update, 2026-10-14, follow-up session: IH&MMSec's own CFP text, read directly
+
+The IH&MMSec 2025 CFP (`ihmmsec.org/cms/upload/2025/FormattedCFPwithLogo1.pdf`, fetched
+and read directly, not from a search summary) gives facts the first pass of this
+research didn't have, and they change the compression conclusion below:
+
+- **Full papers: 10-12 pages including references.** This manuscript is exactly 12
+  pages. It fits IH&MMSec's limit at the upper bound, **with no compression needed** —
+  unlike WIFS's 6-page limit, which does require real cutting. This is a material
+  factor in favor of the recommendation below, not just topical fit.
+- **Double-blind: "Manuscripts must be properly anonymized for double-blind review."**
+  WIFS 2026, by contrast, was explicitly single-blind ("no need to anonymise"). If
+  IH&MMSec is the target, `paper/main.tex`'s `\author` block (names, IIT Patna and
+  VIPS-TC affiliations) needs to be stripped or replaced with placeholder text for
+  submission, and reintroduced only in the camera-ready version — this was not
+  previously stated as a requirement anywhere in this project's documentation.
+- **Dual-submission clause**, quoted exactly: "Submissions must not substantially
+  overlap with papers that have been published or that are simultaneously submitted to
+  a journal or a conference." This is silent on preprint servers specifically. ACM's
+  general publications policy is well-documented elsewhere (and corroborated by
+  several ACM conferences' own author-instructions pages checked this session) as
+  explicitly excepting arXiv/preprint postings from counting as prior publication —
+  but the ACM policy page itself (`acm.org/publications/policies/simultaneous-
+  submissions`) returned HTTP 403 when fetched directly in this session, so that
+  specific claim rests on secondary-source corroboration, not a primary-source read,
+  and should be re-confirmed before relying on it.
+- **2025 schedule** (the most recent full CFP read in full): submission site opened
+  Jan 10, deadline Feb 14, notification Apr 12, workshop Jun 18-20. Consistent with
+  the 2026 edition's Feb 16 deadline / Jun 17-19 workshop found earlier — a genuine
+  two-year pattern, not a one-off, which is what the "2027 CFP likely opens Sep-Nov
+  2026" estimate above is based on.
+
 ## Recommendation
 
 **First choice once a CFP opens: ACM IH&MMSec**, over WIFS, for two reasons specific
@@ -62,14 +94,19 @@ were withdrawn from their venue for having an arXiv preprint first).
 - Which of IH&MMSec, WIFS, or a journal track (TIFS) to actually target once a CFP
   opens — this audit recommends IH&MMSec first but does not commit you to it.
 - Page-limit compliance: WIFS enforces 6 pages including references; this manuscript
-  is 12 pages. If WIFS is the eventual target, the paper needs genuine compression
-  before submission, not just reformatting — that's substantive editorial work this
-  audit did not attempt, since no venue is confirmed yet and cutting content against
-  the wrong page limit would be wasted or actively harmful.
-- IH&MMSec's typical page limit was not confirmed this session (its 2026 CFP details
-  weren't surfaced by the fetches run here) — check this once its 2027 CFP posts.
-- Anonymization policy: WIFS 2026 was explicitly single-blind ("no need to anonymise");
-  this may or may not hold for WIFS 2027, and IH&MMSec's policy was not checked. Do not
-  assume either way until a live CFP confirms it.
+  is 12 pages and would need genuine compression if WIFS is the eventual target.
+  **IH&MMSec's own 2025 CFP confirms a 10-12 page full-paper limit — this manuscript
+  fits as-is**, which removes compression from IH&MMSec's path entirely (see the
+  update above). Both figures are now primary-source-confirmed, not open questions.
+- Anonymization: **IH&MMSec requires double-blind anonymization**, confirmed from its
+  own CFP text. WIFS 2026 was explicitly single-blind. If IH&MMSec is pursued, the
+  manuscript's author/affiliation block needs to be stripped before submission — a
+  concrete, newly-identified pre-submission task, not a vague caveat.
+- Still unconfirmed: whether ACM's general arXiv-preprint exception (well-corroborated
+  via secondary sources) actually governs IH&MMSec specifically — the primary ACM
+  policy page returned 403 on direct fetch. Re-attempt before relying on it for a
+  submission decision.
+- 2027 CFP dates for both WIFS and IH&MMSec remain genuinely unannounced — nothing in
+  this update changes that; check back per the cadence estimates above.
 
 No acceptance likelihood is claimed or implied anywhere in this document.
