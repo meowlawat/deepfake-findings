@@ -799,6 +799,7 @@ $n_{\text{eval}}{=}600$, $1{,}000$ bootstrap resamples. EfficientNet-B6 at
 $528$ shown for reference.}
 \label{tab:resolution}
 \footnotesize
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{lcccc}
 \toprule
 Resolution & baseline AUC & wm $b$ & null $b$ & null $-$ wm \\
@@ -967,10 +968,10 @@ remaining one having an empty review band by construction.
 to the clean arm. ``worse'' means the arm's DRD exceeds clean's in that cell.}
 \label{tab:cost-surface}
 \footnotesize
-\setlength{\tabcolsep}{4pt}
+\setlength{\tabcolsep}{2.5pt}
 \begin{tabular}{llcc}
 \toprule
-Calibrator & Arm & median DRD $-$ clean & worse in \\
+Calib. & Arm & med.\ $\Delta$DRD & worse in \\
 \midrule
 isotonic & null[DWT]  & $+0.0148$ & $\mathbf{98\%}$ \\
 isotonic & null[Riva] & $+0.0042$ & $83\%$ \\
