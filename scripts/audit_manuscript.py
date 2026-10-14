@@ -115,11 +115,20 @@ def check_frequency_dose() -> list[tuple[str, bool, str]]:
 # artifact backing them, as of this audit. Listed explicitly so the script
 # documents the gap rather than silently ignoring it.
 MANUSCRIPT_REPORTED_ONLY = [
-    "Total corpus size '22,000 images' (not found verbatim; see docs/manuscript_audit.md)",
     "E9 63-cell cost-risk grid individual cell values (artifact present, not value-checked here)",
     "E10 resolution ablation individual values (artifact present, not value-checked here)",
     "detector_screen.json individual per-model AUCs (artifact present, not value-checked here)",
 ]
+
+# Not a manuscript claim: this figure originated in an earlier task prompt,
+# not in paper/main.tex or any artifact here. Kept as its own note, separate
+# from MANUSCRIPT_REPORTED_ONLY above, so it isn't implied to be an
+# unverified *manuscript* claim -- it was never a manuscript claim at all.
+# See docs/manuscript_audit.md for the full trace.
+NOT_A_MANUSCRIPT_CLAIM = (
+    "Total corpus size '22,000 images': traced to an earlier task prompt, "
+    "not to this manuscript or any artifact here (see docs/manuscript_audit.md)"
+)
 
 
 def main() -> int:
@@ -140,6 +149,10 @@ def main() -> int:
     print("MANUSCRIPT REPORTED ONLY (no machine-readable artifact cross-checked here):")
     for item in MANUSCRIPT_REPORTED_ONLY:
         print(f"  - {item}")
+
+    print()
+    print("NOT A MANUSCRIPT CLAIM (traced to an external source, not this project):")
+    print(f"  - {NOT_A_MANUSCRIPT_CLAIM}")
 
     print()
     if failed:

@@ -25,9 +25,10 @@ So, stated plainly instead of restructured:
 - **`results/imported_manuscript/` is empty and not created** — there was
   nothing to import. Every "locked" numeric claim in the task brief that
   could be located in the manuscript was also located in one of these raw
-  artifact files. The one exception (total corpus size stated as "22,000")
-  is documented as an open discrepancy in `docs/manuscript_audit.md`, not
-  silently imported as if it had a source file.
+  artifact files. The one exception — total corpus size stated as "22,000"
+  — was not imported as if it had a source file, because it has none: it
+  originated in the task brief itself, not in this project's manuscript or
+  results. Full trace in `docs/manuscript_audit.md`.
 - **`results/reproduced/` is empty and not created** — no experiment was
   independently re-executed end-to-end against the real dataset and public
   detector checkpoints in this audit session (no local dataset copy, and

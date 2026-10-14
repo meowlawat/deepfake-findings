@@ -72,11 +72,11 @@ Splits actually used, each with an artifact behind it (see
 | 4-detector panel (E7) | 800 | The evidence-transfer comparison across all four detectors, 7 arms each |
 | Localized manipulation (E8) | 200 (x6 coverage x4 families x2 schemes = 9,600 measurements) | Does a robust watermark survive partial manipulation |
 
-Note: a "22,000 total images, 50/50 StyleGAN/real" figure appears in some
-external descriptions of this project but was **not** found anywhere in
-`paper/main.tex` or the result artifacts during this audit. Treat the table
-above as authoritative; see `docs/manuscript_audit.md` for the discrepancy
-note.
+Note: a "22,000 total images, 50/50 StyleGAN/real" figure has circulated in
+notes about this project. It is not a manuscript-reported count — it traces
+to an earlier task prompt, not to `paper/main.tex` or any result artifact,
+and no combination of the real splits above sums to it. Treat the table
+above as authoritative; see `docs/manuscript_audit.md` for the full trace.
 
 ## Watermarks
 
@@ -132,9 +132,10 @@ metric unit tests.
   This is real re-execution, not a claim taken on faith -- but it is
   code-level verification, not a full re-run of the 20,000-image pipeline
   against freshly downloaded data and freshly scored detectors.
-- **Manuscript-reported only:** the one located discrepancy is the "22,000
-  images" total-corpus figure -- not found as stated anywhere in this repo.
-  Reported as a gap, not silently corrected or silently repeated.
+- **Not a manuscript claim at all:** the "22,000 images" total-corpus figure
+  that appears in some notes about this project is not reported anywhere in
+  this repo's manuscript, docs, or results. It traces to an earlier task
+  prompt, not to the paper. See `docs/manuscript_audit.md` for the trace.
 
 Full breakdown: `docs/source_provenance.md`, `docs/manuscript_audit.md`,
 `docs/research_integrity_report.md`.

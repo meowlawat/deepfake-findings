@@ -30,13 +30,17 @@ repository, opened, and its numeric content compared against the claim.
 
 Full per-claim table: `docs/manuscript_audit.md`.
 
+## A figure that is not a manuscript claim
+
+An earlier task brief stated the dataset as "22,000 total images, 50/50
+StyleGAN/real." That figure does not appear anywhere in `paper/main.tex`,
+`docs/`, or `results/`, and no combination of the real, documented splits
+(16,000 train / 20,000 confirmatory / 150+150 exploratory / 800 panel /
+8,000 replication) sums to it. It originated in the task brief itself, not
+in this manuscript — full trace in `docs/manuscript_audit.md`.
+
 ## Which results exist only in the manuscript (no artifact located)?
 
-- The "22,000 total images, 50/50 StyleGAN/real" figure. Not found verbatim
-  anywhere in `paper/main.tex`, `docs/`, or `results/`. The splits that *are*
-  documented and backed (16,000 train / 20,000 confirmatory / 150+150
-  exploratory / 800 panel / 8,000 replication) do not sum to or match this
-  figure. Flagged in `docs/manuscript_audit.md`, not silently resolved.
 - E9 (63-cell cost-risk grid), E10 (resolution ablation), and
   `detector_screen.json`'s individual per-model AUCs: artifact files exist
   and are git-tracked, but their individual values were not cross-checked

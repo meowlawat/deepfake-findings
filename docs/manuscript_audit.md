@@ -29,15 +29,15 @@ manuscript read, not a truncated extract.
 | Resolution sweep 224→448, no explanatory effect | Conclusion | `results/e10_resolution_ablation.json` (not independently re-derived in this pass beyond confirming the file exists and is git-tracked) | Artifact present; not individually re-verified number-by-number in this audit pass |
 | 5 of 6 screened public checkpoints at chance | §Setup / Discussion | `results/detector_screen.json` (present, git-tracked) | Artifact present; not individually re-verified number-by-number in this audit pass |
 | Bootstrap: n_boot=2000, image-level pairing | Throughout | `results/e7_full_panel_analysis.json: "n_boot": 2000`; `src/deepfake_interference/stats.py` (pairing logic) | Supported by artifact and code |
-| "22,000 images," 50/50 StyleGAN/real, as *stated total corpus size* | Not found verbatim in `paper/main.tex` | No exact match located | **Not independently verified as stated** — see discrepancy note below |
+| "22,000 images," 50/50 StyleGAN/real, as *stated total corpus size* | Not a manuscript claim — not present in `paper/main.tex` | N/A — nothing to verify | **Traced to an earlier task prompt, not to this manuscript** — see note below |
 
-## Discrepancy: total corpus size
+## The "22,000 images" figure is not a manuscript claim
 
-The task brief that initiated this audit stated the dataset as "22,000
-images... 50 percent StyleGAN generated, 50 percent real photographs" as if
-this were a manuscript-reported total. Searching `paper/main.tex` in full
-finds no occurrence of "22,000" or "22000." What the manuscript and artifacts
-actually state:
+An earlier task brief stated the dataset as "22,000 images... 50 percent
+StyleGAN generated, 50 percent real photographs," as if this were a
+manuscript-reported total. It is not. Searching `paper/main.tex` in full
+finds no occurrence of "22,000" or "22000," and no combination of the real,
+artifact-backed splits sums to it either:
 
 - Source corpus: HF `TheKernel01/140k-Real-and-Fake-Faces` (140,000 images,
   100k/20k/20k train/val/test, mirrors Kaggle `xhlulu/140k-real-and-fake-faces`),
@@ -48,13 +48,12 @@ actually state:
 - Exploratory pilot: `150+150` (`paper/main.tex` §Setup).
 - E7 panel slice: `n = 800` (`results/e7_full_panel_analysis.json`).
 
-No combination of these sums to exactly 22,000, and no single split of
-exactly 22,000 was found anywhere in the repository. This is reported as a
-discrepancy, not silently corrected to either number — the manuscript's own
-stated splits (16,000 / 20,000 / 150+150 / 800) are the ones with artifact
-backing and should be treated as authoritative; "22,000" as a total-corpus
-figure is unverified and should not be repeated as fact without locating its
-source.
+The figure's origin is the task brief itself, not this manuscript or any
+artifact in this repository — there is no missing or unlocated source to
+keep searching for. The manuscript's own stated splits above (16,000 /
+20,000 / 150+150 / 800) are the authoritative counts. "22,000" should not be
+repeated as a project figure in any context; it describes a premise from an
+earlier prompt, not this project's data.
 
 ## Qualitative claims — support level
 
@@ -108,7 +107,7 @@ major quantitative claim checked in this pass is backed by a real,
 git-tracked, independently-inspected artifact file, and the qualitative
 interpretation in the text is at or below what the numbers support — if
 anything the manuscript is more conservative than it needs to be in places
-(e.g., stating "≤0.006" for a measured 0.0042). The one open item is the
-unverified "22,000 total images" figure, which appears to have entered the
-task brief from somewhere other than this manuscript and should not be
-propagated further without locating its source.
+(e.g., stating "≤0.006" for a measured 0.0042). The "22,000 total images"
+figure that appears in some notes about this project is not a manuscript
+claim; it entered an earlier task brief from outside this repository and
+should not be repeated as a project figure.

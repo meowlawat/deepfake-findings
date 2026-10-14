@@ -86,14 +86,15 @@ taken on the brief's word:
   readable, mean BER ≤ 0.006): exact match, `results/e8_manipulation_grid.json`
   (measured mean at 25% = 0.00418).
 
-One figure in the brief does **not** have a located exact match:
+One figure in the original task brief is **not a manuscript claim**:
 
 - **"22,000 images" / "50% StyleGAN / 50% real photographs" as the stated
   total corpus size** — not found verbatim anywhere in `paper/main.tex`,
-  `docs/`, or the result JSON files. What is confirmed: `n_train=16,000`
-  (probe training split), `n=20,000` (confirmatory validation split),
-  `n=8,000` (second-detector replication subset of validation), exploratory
-  `150+150`, source dataset is HF `TheKernel01/140k-Real-and-Fake-Faces`
-  (140k total, 100k/20k/20k train/val/test). No single figure of exactly
-  22,000 was found. This is flagged, not silently corrected or silently
-  repeated — see `docs/manuscript_audit.md`.
+  `docs/`, or the result JSON files, because it was never reported there. It
+  originated in the task brief that requested this audit, not in this
+  project. What this project actually reports: `n_train=16,000` (probe
+  training split), `n=20,000` (confirmatory validation split), `n=8,000`
+  (second-detector replication subset of validation), exploratory `150+150`,
+  source dataset HF `TheKernel01/140k-Real-and-Fake-Faces` (140k total,
+  100k/20k/20k train/val/test). No single figure of exactly 22,000 exists in
+  this project — see `docs/manuscript_audit.md` for the full trace.
