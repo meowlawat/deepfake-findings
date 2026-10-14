@@ -214,18 +214,32 @@ it:
   reenactment manipulation, and carries no identity metadata, so bootstrap intervals
   are image-level only.
 
-## Bibliography re-verification (named remaining task)
+## Bibliography re-verification — now completed
 
-19 of 21 `refs.bib` entries were not individually re-checked against a publisher or
-proceedings record in this session. This is the single largest named gap in this audit.
-Recommended before submission: fetch each entry's DOI/proceedings page directly and
-confirm title, author list, venue, and year match exactly.
+**Update, 2026-10-14, follow-up session:** all 21 entries have now been individually
+checked against a primary source (arXiv abstract pages for entries with an `eprint`
+ID; the CVF open-access page and a corroborating search for `rossler2019faceforensics`).
+Full detail, per-entry sourcing, and the two residual gaps found (EditGuard's venue
+line not independently re-confirmed this session; five entries' ACM MM/CVPR venue
+metadata plausible but not re-checked against each paper's own proceedings listing) are
+in `docs/bibliography-verification.md`. Title and author identity is solid for all 21;
+nothing in the bibliography was found to be fabricated, retracted, or mismatched.
+
+## Venue shortlist — now completed
+
+**Update, 2026-10-14, follow-up session:** researched against official conference
+pages, not secondary aggregators alone. Finding, stated plainly: every topically-matched
+venue's near-term deadline has already passed (WIFS 2026, IH&MMSec 2026, ICASSP 2027)
+or is not yet announced (WIFS 2027: TBD; IH&MMSec 2027: not yet posted). Full detail,
+sourcing, and dates in `docs/venue-shortlist.md`. Recommendation: ACM IH&MMSec once its
+2027 CFP opens, with an arXiv preprint now as the interim action rather than waiting
+on a closed submission calendar.
 
 ## Final state
 
-- Branch: `main`. Commits this session not yet made at time of writing this document
-  (see final commit list in the session's closing report) — the table fixes and PDF
-  rebuild are staged for a single commit, consistent with "small, auditable changes."
+- Branch: `main`. This session's commits: table-layout fixes + PDF rebuild +
+  this document (`d380fc0`), plus the bibliography and venue audits that follow it
+  (see this session's closing report for the exact commit list).
 - `scripts/audit_manuscript.py`: 26/26 passing (unchanged by this pass — no claim or
   number was touched).
 - `pytest`: 38/38 passing.
@@ -238,14 +252,21 @@ confirm title, author list, venue, and year match exactly.
 ## Verdict
 
 **Conditionally ready for venue-specific submission checks**, not yet "ready for
-submission" outright, pending exactly these named items and nothing else:
+submission" outright. Two of the three original named items are now resolved
+(bibliography, venue research); what remains is genuinely venue-dependent and cannot
+be completed without a live CFP or your decision:
 
-1. Re-verify the 19 unchecked bibliography entries against publisher/proceedings
-   records.
-2. Select a venue and check its template, page limit, anonymization policy, and
-   supplementary-material rules against this manuscript — none of that has been done
-   because no venue has been named.
-3. Decide on the two unused figure files (keep as supplementary, or remove).
+1. ~~Re-verify the 19 unchecked bibliography entries~~ — done; two narrow residual
+   gaps remain, see `docs/bibliography-verification.md`.
+2. ~~Select a venue and check requirements~~ — no venue *can* be selected yet because
+   no scope-matched venue has an open CFP; see `docs/venue-shortlist.md` for exactly
+   what's blocking this and when to check again.
+3. Decide on the two unused figure files (keep as supplementary, or remove) — still
+   open, still your call.
+4. **New, surfaced by the venue research:** if WIFS ends up the eventual target, this
+   12-page manuscript needs genuine compression to its 6-page limit — substantive
+   editorial work, not attempted here because no venue is confirmed and cutting
+   against the wrong limit would be wasted effort.
 
 The manuscript's scientific content — the statistical methodology, the control
 construction and its stated limits, the detector-panel reporting, the pre-registration
