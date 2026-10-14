@@ -165,14 +165,18 @@ throughput numbers and the Tier 2 comparison.
 
 ## Paper 1 (Tier 1) status
 
-**Submitted-manuscript-ready, not yet submitted.** 1267-line IEEEtran source
-at `paper/main.tex`, compiled PDF committed at `paper/main.pdf` (same commit
-as the current `.tex`, so no drift between source and compiled artifact as
-of that commit -- this audit could not independently rebuild the PDF in its
-sandbox, which lacks a LaTeX toolchain and admin rights to install one; see
-`docs/research_integrity_report.md`). No DOI, no venue, no acceptance claim
-anywhere in the manuscript or `CITATION.cff` -- none of those exist yet and
-none are claimed.
+**Submitted-manuscript-ready, not yet submitted.** 1270-line IEEEtran source
+at `paper/main.tex`, compiled PDF committed at `paper/main.pdf`. As of commit
+`d380fc0`, the PDF has been independently rebuilt from source with Tectonic
+0.17.0 (zero errors, zero undefined references or citations) and every page
+visually inspected for layout defects -- an earlier audit's claim that no
+LaTeX toolchain was available in its sandbox did not hold in a later session;
+see `docs/conference-readiness.md` for the full compile/visual-inspection
+record. All 21 bibliography entries are individually verified against a
+primary source (`docs/bibliography-verification.md`). No venue has an open,
+scope-matched CFP as of 2026-10-14 (`docs/venue-shortlist.md`); no DOI, no
+venue, no acceptance claim anywhere in the manuscript or `CITATION.cff` --
+none of those exist yet and none are claimed.
 
 ## Paper 2 (Tier 2) status
 
@@ -210,6 +214,6 @@ See `CITATION.cff`. No DOI or venue -- omitted, not invented.
 | `results/` | Raw and derived result JSON -- see `results/PROVENANCE.md` |
 | `models/` | The three disclosed-provenance linear probes (frozen backbone + logistic head weights) |
 | `tests/` | 38 tests, no GPU/network required |
-| `docs/` | Design history (`00`-`04`), code/results logs (`05`, `06`), panel-expansion and preregistration plans (`07`), CLI handoff context (`09`), and this audit's output (`source_provenance.md`, `manuscript_audit.md`, `research_integrity_report.md`, `hardware_requirements.md`, `tier2_resource_plan.md`) |
+| `docs/` | Design history (`00`-`04`), code/results logs (`05`, `06`), panel-expansion and preregistration plans (`07`), CLI handoff context (`09`), audit output (`source_provenance.md`, `manuscript_audit.md`, `research_integrity_report.md`, `hardware_requirements.md`, `tier2_resource_plan.md`), and submission-readiness output (`conference-readiness.md`, `bibliography-verification.md`, `venue-shortlist.md`, `orphaned-directory-comparison.md`) |
 | `config.yaml`, `e4e5_config.yaml` | Single source of truth for every constant a script uses -- no absolute personal paths |
 | `.github/workflows/ci.yml` | Syntax check, tests, config validation, manuscript numeric audit -- no GPU/dataset dependency |
